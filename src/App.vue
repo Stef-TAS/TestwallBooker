@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { ref } from 'vue'
 import Sidebar from 'primevue/sidebar'
-import SidebarBackdrop from 'primevue/sidebarbackdrop'
 import SidebarAside from 'primevue/sidebaraside'
 import SidebarContent from 'primevue/sidebarcontent'
 import SidebarFooter from 'primevue/sidebarfooter'
@@ -31,34 +30,13 @@ import Search from '@primeicons/vue/search'
 import Warehouse from '@primeicons/vue/warehouse'
 import User from '@primeicons/vue/user'
 
-const isMobile = ref(false)
 const sidebarOpen = ref(true)
-
-function syncSidebarMode() {
-  isMobile.value = window.matchMedia('(max-width: 768px)').matches
-  sidebarOpen.value = !isMobile.value
-}
-
-onMounted(() => {
-  syncSidebarMode()
-  window.addEventListener('resize', syncSidebarMode)
-})
-
-onBeforeUnmount(() => {
-  window.removeEventListener('resize', syncSidebarMode)
-})
 </script>
 
 <template>
   <div>
     <SidebarLayout>
-      <SidebarBackdrop />
-      <Sidebar
-        id="mainsidebar"
-        v-model:open="sidebarOpen"
-        :overlay="isMobile"
-        :collapsible="isMobile ? 'offcanvas' : 'icon'"
-      >
+      <Sidebar id="mainsidebar" v-model:open="sidebarOpen" :overlay="false" collapsible="icon">
         <SidebarSpacer />
         <SidebarAside>
           <SidebarPanel>
@@ -69,6 +47,11 @@ onBeforeUnmount(() => {
                     <Warehouse />
                     <span class="text-xl">Testwall Booker</span>
                   </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarTrigger severity="secondary" target="mainsidebar" :text="true">
+                    <SidebarIcon />
+                  </SidebarTrigger>
                 </SidebarMenuItem>
               </SidebarMenu>
             </SidebarHeader>
@@ -114,9 +97,6 @@ onBeforeUnmount(() => {
         </SidebarAside>
       </Sidebar>
       <SidebarMain class="m-4">
-        <SidebarTrigger severity="secondary" target="mainsidebar" :text="true" size="small">
-          <SidebarIcon />
-        </SidebarTrigger>
         <RouterView />
       </SidebarMain>
     </SidebarLayout>

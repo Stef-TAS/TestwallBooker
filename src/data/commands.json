@@ -1,0 +1,107 @@
+[
+  {
+    "commandName": "shutdown_all",
+    "commandCategory": "Admin",
+    "commandDescription": "Shuts down all Testwalls"
+  },
+  {
+    "commandName": "restart_all",
+    "commandCategory": "Admin",
+    "commandDescription": "Restarts all Testwalls"
+  },
+  {
+    "commandName": "lock_all",
+    "commandCategory": "Admin",
+    "commandDescription": "Locks all Testwalls for maintenance"
+  },
+  {
+    "commandName": "unlock_all",
+    "commandCategory": "Admin",
+    "commandDescription": "Unlocks all Testwalls"
+  },
+  {
+    "commandName": "status_all",
+    "commandCategory": "Monitoring",
+    "commandDescription": "Shows health and availability for all Testwalls"
+  },
+  {
+    "commandName": "list_offline",
+    "commandCategory": "Monitoring",
+    "commandDescription": "Lists all offline Testwalls"
+  },
+  {
+    "commandName": "list_idle",
+    "commandCategory": "Monitoring",
+    "commandDescription": "Lists Testwalls with no active sessions"
+  },
+  {
+    "commandName": "ping_wall",
+    "commandCategory": "Monitoring",
+    "commandDescription": "Pings a specific Testwall to check connectivity"
+  },
+  {
+    "commandName": "reserve_wall",
+    "commandCategory": "Booking",
+    "commandDescription": "Reserves a Testwall for a given user"
+  },
+  {
+    "commandName": "release_wall",
+    "commandCategory": "Booking",
+    "commandDescription": "Releases an active Testwall reservation"
+  },
+  {
+    "commandName": "extend_reservation",
+    "commandCategory": "Booking",
+    "commandDescription": "Extends reservation duration for a Testwall"
+  },
+  {
+    "commandName": "transfer_reservation",
+    "commandCategory": "Booking",
+    "commandDescription": "Transfers a reservation to another user"
+  },
+  {
+    "commandName": "set_owner",
+    "commandCategory": "Booking",
+    "commandDescription": "Assigns or changes the owner of a Testwall"
+  },
+  {
+    "commandName": "clear_owner",
+    "commandCategory": "Booking",
+    "commandDescription": "Clears the owner assignment of a Testwall"
+  },
+  {
+    "commandName": "open_access",
+    "commandCategory": "Access",
+    "commandDescription": "Enables open access mode on a Testwall"
+  },
+  {
+    "commandName": "close_access",
+    "commandCategory": "Access",
+    "commandDescription": "Disables open access mode on a Testwall"
+  },
+  {
+    "commandName": "grant_access",
+    "commandCategory": "Access",
+    "commandDescription": "Grants a user access to a specific Testwall"
+  },
+  {
+    "commandName": "revoke_access",
+    "commandCategory": "Access",
+    "commandDescription": "Revokes a user's access to a specific Testwall"
+  },
+  {
+    "commandName": "run_diagnostics",
+    "commandCategory": "Maintenance",
+    "commandDescription": "Runs a diagnostics suite on a Testwall"
+  },
+  {
+    "commandName": "reset_network",
+    "commandCategory": "Maintenance",
+    "commandDescription": "Resets the network interface on a Testwall"
+  },
+  {
+    "commandName": "update_firmware",
+    "commandCategory": "Maintenance",
+    "commandDescription": "Schedules a firmware update for a Testwall"
+  }
+]

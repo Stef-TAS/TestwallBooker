@@ -68,7 +68,7 @@ onMounted(() => {
         </template>
       </Column>
       <Column field="user" header="User" sortable />
-      <Column field="ipAddress" header="IP" sortable />
+      <Column field="ipAddress" header="User" sortable />
     </DataTable>
   </div>
 </template>
