@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { onBeforeUnmount, onMounted, ref } from 'vue'
 import Sidebar from 'primevue/sidebar'
 import SidebarBackdrop from 'primevue/sidebarbackdrop'
 import SidebarAside from 'primevue/sidebaraside'
@@ -24,19 +24,52 @@ import SidebarPanel from 'primevue/sidebarpanel'
 import SidebarRail from 'primevue/sidebarrail'
 import SidebarSpacer from 'primevue/sidebarspacer'
 import SidebarTrigger from 'primevue/sidebartrigger'
+import SidebarIcon from '@primeicons/vue/sidebar'
+import Home from '@primeicons/vue/home'
+import Code from '@primeicons/vue/code'
+import Search from '@primeicons/vue/search'
+import Warehouse from '@primeicons/vue/warehouse'
+import User from '@primeicons/vue/user'
+
+const isMobile = ref(false)
+const sidebarOpen = ref(true)
+
+function syncSidebarMode() {
+  isMobile.value = window.matchMedia('(max-width: 768px)').matches
+  sidebarOpen.value = !isMobile.value
+}
+
+onMounted(() => {
+  syncSidebarMode()
+  window.addEventListener('resize', syncSidebarMode)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', syncSidebarMode)
+})
 </script>
 
 <template>
   <div>
     <SidebarLayout>
       <SidebarBackdrop />
-      <Sidebar>
+      <Sidebar
+        id="mainsidebar"
+        v-model:open="sidebarOpen"
+        :overlay="isMobile"
+        :collapsible="isMobile ? 'offcanvas' : 'icon'"
+      >
         <SidebarSpacer />
         <SidebarAside>
           <SidebarPanel>
             <SidebarHeader>
               <SidebarMenu>
-                <SidebarMenuItem>Testwall Booker </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton @click="$router.push('/overview')">
+                    <Warehouse />
+                    <span class="text-xl">Testwall Booker</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
               </SidebarMenu>
             </SidebarHeader>
             <SidebarContent>
@@ -52,13 +85,13 @@ import SidebarTrigger from 'primevue/sidebartrigger'
                     </SidebarMenuItem>
                     <SidebarMenuItem>
                       <SidebarMenuButton @click="$router.push('/terminal')">
-                        <Inbox />
+                        <Code />
                         <span>Pseudo Terminal</span>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                     <SidebarMenuItem>
                       <SidebarMenuButton @click="$router.push('/query')">
-                        <Inbox />
+                        <Search />
                         <span>Query</span>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -70,6 +103,7 @@ import SidebarTrigger from 'primevue/sidebartrigger'
               <SidebarMenu>
                 <SidebarMenuItem>
                   <SidebarMenuButton>
+                    <User />
                     <span>John Doe</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -80,6 +114,9 @@ import SidebarTrigger from 'primevue/sidebartrigger'
         </SidebarAside>
       </Sidebar>
       <SidebarMain class="m-4">
+        <SidebarTrigger severity="secondary" target="mainsidebar" :text="true" size="small">
+          <SidebarIcon />
+        </SidebarTrigger>
         <RouterView />
       </SidebarMain>
     </SidebarLayout>
