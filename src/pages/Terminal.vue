@@ -8,6 +8,7 @@ import Toast from 'primevue/toast'
 import { useToast } from 'primevue/usetoast'
 import { storeToRefs } from 'pinia'
 import { useTestwallsStore } from '../stores/testwalls'
+import { useCommandsStore, type Command } from '../stores/commands'
 const toast = useToast()
 
 async function copyCommandToClipboard(commandName: string) {
@@ -53,12 +54,9 @@ function onHotkey(event: any) {
   }
 }
 
-type Command = {
-  commandName: string
-  commandCategory: string
-  commandDescription: string
-}
-const commands = ref<Command[]>([])
+const commandsStore = useCommandsStore()
+const { commands } = storeToRefs(commandsStore)
+const { loadCommands } = commandsStore
 
 const groupedCommands = computed(() => {
   const groups = new Map<string, Command[]>()
@@ -91,25 +89,6 @@ const groupedCommands = computed(() => {
     })),
   }))
 })
-
-const commandsFileUrl = new URL('../data/commands.json', import.meta.url).href
-
-async function loadCommands() {
-  try {
-    const response = await fetch(commandsFileUrl)
-    if (!response.ok) {
-      throw new Error(`Request failed with status ${response.status}`)
-    }
-
-    const contentType = response.headers.get('content-type') || ''
-    if (!contentType.includes('application/json')) {
-      throw new Error('Data file did not return JSON content')
-    }
-
-    const data = (await response.json()) as Command[]
-    commands.value = data
-  } catch (error) {}
-}
 
 const testwallsStore = useTestwallsStore()
 const { testwalls } = storeToRefs(testwallsStore)
