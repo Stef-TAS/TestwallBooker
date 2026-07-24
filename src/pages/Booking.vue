@@ -59,8 +59,8 @@ onMounted(() => {
 
 const selectedRadioButton = ref()
 
-const bookingstart = ref()
-const bookingend = ref()
+const bookingstart = ref(new Date(Date.now()))
+const bookingend = ref(new Date(Date.now()))
 </script>
 <template>
   <div class="mb-4">
@@ -76,7 +76,7 @@ const bookingend = ref()
         <Step value="3">Select Testwall</Step>
         <Step value="4">Confirm Booking</Step>
       </StepList>
-      <StepPanels>
+      <StepPanels class="w-full max-w-3/5 justify-self-center">
         <StepPanel v-slot="{ activateCallback }" value="1">
           <Card>
             <template #content>
@@ -148,7 +148,7 @@ const bookingend = ref()
                     hourFormat="24"
                     fluid
                     inputId="BookingEndPicker"
-                    :min-date="new Date(Date.now())"
+                    :min-date="bookingstart"
                   />
                 </div>
               </div>
@@ -217,7 +217,7 @@ const bookingend = ref()
                   <ArrowLeft />
                   Back
                 </Button>
-                <Button @click="activateCallback('4')">
+                <Button @click="activateCallback('4')" :disabled="selectedRadioButton == undefined">
                   Next
                   <ArrowRight />
                 </Button>
@@ -230,8 +230,8 @@ const bookingend = ref()
             <template #content>
               <p>Confirm that your booking has been defined correctly</p>
               <Divider />
-              <div class="flex flex-row">
-                <Fieldset legend="Account Information">
+              <div class="flex justify-between gap-4">
+                <Fieldset legend="Account Information" class="w-full">
                   <div class="flex flex-col text-sm p-2">
                     <div class="flex justify-between">
                       <span class="text-color">Username</span>
@@ -243,26 +243,27 @@ const bookingend = ref()
                     </div>
                   </div>
                 </Fieldset>
-                <Fieldset legend="Testwall Information">
+                <Fieldset legend="Testwall Information" class="w-full">
                   <div class="flex flex-col text-sm p-2">
                     <div class="flex justify-between">
                       <span class="text-color">Selected Testwall</span>
-                      <span class="text-muted-color">Current Status</span>
+                      <span class="text-color">Testwall 2</span>
                     </div>
                     <div class="flex justify-between">
-                      <span class="text-color">Testwall 2</span>
+                      <span class="text-muted-color">Current Status</span>
+                      <Tag severity="success">Available</Tag>
                     </div>
                   </div>
                 </Fieldset>
-                <Fieldset legend="Selected TimeFrame">
+                <Fieldset legend="Selected TimeFrame" class="w-full">
                   <div class="flex flex-col text-sm p-2">
                     <div class="flex justify-between">
                       <span class="text-color">Startdate</span>
                       <span class="text-muted-color">Enddate</span>
                     </div>
                     <div class="flex justify-between">
-                      <span class="text-color">{{ bookingstart }}</span>
-                      <span class="text-muted-color">{{ bookingend }}</span>
+                      <span class="text-color">{{ bookingstart.toLocaleDateString() }}</span>
+                      <span class="text-muted-color">{{ bookingend.toLocaleDateString() }}</span>
                     </div>
                   </div>
                 </Fieldset>

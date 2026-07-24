@@ -8,6 +8,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
+    { path: '', component: Overview },
     { path: '/overview', component: Overview },
     { path: '/terminal', component: Terminal },
     { path: '/query', component: Query },
