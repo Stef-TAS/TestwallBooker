@@ -69,11 +69,11 @@ const bookingend = ref()
   </div>
 
   <div>
-    <Stepper value="4" linear>
+    <Stepper value="1" linear>
       <StepList>
         <Step value="1">Confirm Account Information</Step>
-        <Step value="2">Select Testwall</Step>
-        <Step value="3">Select Timeframe</Step>
+        <Step value="2">Select Timeframe</Step>
+        <Step value="3">Select Testwall</Step>
         <Step value="4">Confirm Booking</Step>
       </StepList>
       <StepPanels>
@@ -122,10 +122,52 @@ const bookingend = ref()
             </template>
           </Card>
         </StepPanel>
+
         <StepPanel v-slot="{ activateCallback }" value="2">
           <Card>
             <template #content>
-              <p>You want Testwall 2</p>
+              <div class="flex flex-wrap gap-4">
+                <div class="flex-auto">
+                  <label for="BookingStartPicker" class="block">Start Date&Time</label>
+                  <DatePicker
+                    v-model="bookingstart"
+                    showIcon
+                    showTime
+                    hourFormat="24"
+                    fluid
+                    inputId="BookingStartPicker"
+                    :min-date="new Date(Date.now())"
+                  />
+                </div>
+                <div class="flex-auto">
+                  <label for="BookingEndPicker" class="block">End Date&Time</label>
+                  <DatePicker
+                    v-model="bookingend"
+                    showIcon
+                    showTime
+                    hourFormat="24"
+                    fluid
+                    inputId="BookingEndPicker"
+                    :min-date="new Date(Date.now())"
+                  />
+                </div>
+              </div>
+              <div class="flex pt-5 justify-between">
+                <Button severity="secondary" @click="activateCallback('1')">
+                  <ArrowLeft />
+                  Back
+                </Button>
+                <Button @click="activateCallback('3')">
+                  Next
+                  <ArrowRight />
+                </Button>
+              </div>
+            </template>
+          </Card>
+        </StepPanel>
+        <StepPanel v-slot="{ activateCallback }" value="3">
+          <Card>
+            <template #content>
               <div>
                 <CommandMenu :model="testwalls" placeholder="Search for Testwalls...">
                   <template #item="{ item }">
@@ -171,48 +213,6 @@ const bookingend = ref()
                 </CommandMenu>
               </div>
               <div class="flex pt-5 justify-between">
-                <Button severity="secondary" @click="activateCallback('1')">
-                  <ArrowLeft />
-                  Back
-                </Button>
-                <Button @click="activateCallback('3')">
-                  Next
-                  <ArrowRight />
-                </Button>
-              </div>
-            </template>
-          </Card>
-        </StepPanel>
-        <StepPanel v-slot="{ activateCallback }" value="3">
-          <Card>
-            <template #content>
-              <div class="flex flex-wrap gap-4">
-                <div class="flex-auto">
-                  <label for="BookingStartPicker" class="block">Start Date&Time</label>
-                  <DatePicker
-                    v-model="bookingstart"
-                    showIcon
-                    showTime
-                    hourFormat="24"
-                    fluid
-                    inputId="BookingStartPicker"
-                    :min-date="new Date(Date.now())"
-                  />
-                </div>
-                <div class="flex-auto">
-                  <label for="BookingEndPicker" class="block">End Date&Time</label>
-                  <DatePicker
-                    v-model="bookingend"
-                    showIcon
-                    showTime
-                    hourFormat="24"
-                    fluid
-                    inputId="BookingEndPicker"
-                    :min-date="new Date(Date.now())"
-                  />
-                </div>
-              </div>
-              <div class="flex pt-5 justify-between">
                 <Button severity="secondary" @click="activateCallback('2')">
                   <ArrowLeft />
                   Back
@@ -251,12 +251,6 @@ const bookingend = ref()
                     </div>
                     <div class="flex justify-between">
                       <span class="text-color">Testwall 2</span>
-                      <Tag v-if="testwalls[0].isAvailable == true" severity="success"
-                        >Available</Tag
-                      >
-                      <Tag v-if="testwalls[0].isAvailable == false" severity="danger"
-                        >Unavailable</Tag
-                      >
                     </div>
                   </div>
                 </Fieldset>
