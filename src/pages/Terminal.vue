@@ -1,11 +1,13 @@
 <script lang="ts" setup>
-import { Button, CommandMenu, Dialog } from 'primevue'
+import { Button, CommandMenu, Dialog, Select, Tag } from 'primevue'
 import Terminal from 'primevue/terminal'
 import TerminalService from 'primevue/terminalservice'
 
 import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
 import Toast from 'primevue/toast'
 import { useToast } from 'primevue/usetoast'
+import { storeToRefs } from 'pinia'
+import { useTestwallsStore } from '../stores/testwalls'
 const toast = useToast()
 
 async function copyCommandToClipboard(commandName: string) {
@@ -109,8 +111,13 @@ async function loadCommands() {
   } catch (error) {}
 }
 
+const testwallsStore = useTestwallsStore()
+const { testwalls } = storeToRefs(testwallsStore)
+const { loadTestwalls } = testwallsStore
+
 onMounted(() => {
   void loadCommands()
+  void loadTestwalls()
   TerminalService.on('command', commandHandler)
   window.addEventListener('keydown', onHotkey)
 })
@@ -128,6 +135,24 @@ const visible = ref(false)
     <p class="text-sm">
       Here you can use predefined Commands to run on the testwalls (see list bellow)
     </p>
+  </div>
+  <div class="mb-4">
+    <p>Admin Terminal Select</p>
+    <Select
+      :options="testwalls"
+      placeholder="Select a Testwall"
+      optionLabel="testwallName"
+      filter
+      filterBy="testwallName"
+    >
+      <template #option="slotProps">
+        <div class="flex gap-4 justify-between">
+          <span>{{ slotProps.option.testwallName }} </span>
+          <Tag v-if="slotProps.option.isAvailable == true" severity="success">Available</Tag>
+          <Tag v-if="slotProps.option.isAvailable == false" severity="danger">Unavailable</Tag>
+        </div>
+      </template>
+    </Select>
   </div>
   <div>
     <Terminal

@@ -8,6 +8,7 @@ import Step from 'primevue/step'
 import StepPanel from 'primevue/steppanel'
 import { Divider, Button, Card, CommandMenu, RadioButton } from 'primevue'
 import { onMounted, ref } from 'vue'
+import { storeToRefs } from 'pinia'
 
 import AlignCenter from '@primeicons/vue/align-center'
 import AlignLeft from '@primeicons/vue/align-left'
@@ -21,42 +22,11 @@ import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import ColumnGroup from 'primevue/columngroup' // optional
 import Row from 'primevue/row' // optional
+import { useTestwallsStore } from '../stores/testwalls'
 
-type Testwall = {
-  testwallId: number
-  testwallName: string
-  isAvailable: boolean
-  user: string
-}
-
-const testwalls = ref<Testwall[]>([])
-const isLoading = ref(true)
-const loadError = ref('')
-const testwallsFileUrl = new URL('../data/testwalls.json', import.meta.url).href
-
-async function loadTestwalls() {
-  try {
-    isLoading.value = true
-    loadError.value = ''
-
-    const response = await fetch(testwallsFileUrl)
-    if (!response.ok) {
-      throw new Error(`Request failed with status ${response.status}`)
-    }
-
-    const contentType = response.headers.get('content-type') || ''
-    if (!contentType.includes('application/json')) {
-      throw new Error('Data file did not return JSON content')
-    }
-
-    const data = (await response.json()) as Testwall[]
-    testwalls.value = data
-  } catch (error) {
-    loadError.value = error instanceof Error ? error.message : 'Unknown error'
-  } finally {
-    isLoading.value = false
-  }
-}
+const testwallsStore = useTestwallsStore()
+const { testwalls } = storeToRefs(testwallsStore)
+const { loadTestwalls } = testwallsStore
 
 type Booking = {
   bookingId: string

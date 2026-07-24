@@ -31,6 +31,7 @@ import Warehouse from '@primeicons/vue/warehouse'
 import User from '@primeicons/vue/user'
 import Info from '@primeicons/vue/info-circle'
 import Bookmark from '@primeicons/vue/bookmark'
+import { Divider } from 'primevue'
 
 const sidebarOpen = ref(true)
 
@@ -107,6 +108,7 @@ const TerminalToolTip =
             <SidebarFooter>
               <SidebarMenu>
                 <SidebarMenuItem>
+                  <Divider />
                   <SidebarMenuButton @click="$router.push('/account')">
                     <User />
                     <span>John Doe</span>
