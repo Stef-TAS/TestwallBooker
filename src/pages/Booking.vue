@@ -17,6 +17,11 @@ import ArrowLeft from '@primeicons/vue/arrow-left'
 import ArrowRight from '@primeicons/vue/arrow-right'
 import ArrowUp from '@primeicons/vue/arrow-up'
 
+import DataTable from 'primevue/datatable'
+import Column from 'primevue/column'
+import ColumnGroup from 'primevue/columngroup' // optional
+import Row from 'primevue/row' // optional
+
 type Testwall = {
   testwallId: number
   testwallName: string
@@ -53,8 +58,74 @@ async function loadTestwalls() {
   }
 }
 
+type Booking = {
+  bookingId: string
+  testwallId: string
+  startDate: Date
+  endDate: Date
+  status: string
+  userEmail: string
+}
+
+type BookingApi = {
+  bookingId: string
+  testwallId: string
+  startDate: string
+  endDate: string
+  status: string
+  userEmail: string
+}
+
+const bookings = ref<Booking[]>([])
+const bookingsFileUrl = new URL('../data/bookings.json', import.meta.url).href
+
+function parseBookingDate(value: string): Date {
+  const parts = value.split('/').map(Number)
+  if (parts.length !== 3 || parts.some((part) => Number.isNaN(part))) {
+    throw new Error(`Invalid booking date: ${value}`)
+  }
+
+  const month = parts[0] as number
+  const day = parts[1] as number
+  const year = parts[2] as number
+  const parsedDate = new Date(year, month - 1, day)
+
+  if (
+    Number.isNaN(parsedDate.getTime()) ||
+    parsedDate.getFullYear() !== year ||
+    parsedDate.getMonth() !== month - 1 ||
+    parsedDate.getDate() !== day
+  ) {
+    throw new Error(`Invalid booking date: ${value}`)
+  }
+
+  return parsedDate
+}
+
+async function loadBookings() {
+  try {
+    const response = await fetch(bookingsFileUrl)
+    if (!response.ok) {
+      throw new Error(`Request failed with status ${response.status}`)
+    }
+
+    const contentType = response.headers.get('content-type') || ''
+    if (!contentType.includes('application/json')) {
+      throw new Error('Data file did not return JSON content')
+    }
+
+    const data = (await response.json()) as BookingApi[]
+    bookings.value = data.map((booking) => ({
+      ...booking,
+      startDate: parseBookingDate(booking.startDate),
+      endDate: parseBookingDate(booking.endDate),
+    }))
+  } catch (error) {}
+}
+
 onMounted(() => {
   void loadTestwalls()
+  void loadBookings()
 })
 
 const selectedRadioButton = ref()
@@ -283,5 +354,40 @@ const bookingend = ref(new Date(Date.now()))
         </StepPanel>
       </StepPanels>
     </Stepper>
+  </div>
+  <div>
+    <Fieldset legend="Booking History" class="max-w-4/5 w-full justify-self-center">
+      <DataTable
+        :value="bookings"
+        tableStyle="min-width: 50rem"
+        stripedRows
+        removableSort
+        paginator
+        :rows="5"
+        :rowsPerPageOptions="[5, 10, 50, 100, 150]"
+      >
+        <Column field="bookingId" header="BookingId" sortable />
+        <Column field="testwallId" header="TestwallId" sortable />
+        <Column field="startDate" header="StartDate" sortable>
+          <template #body="{ data }">
+            <p>{{ data.startDate.toLocaleDateString() }}</p>
+          </template>
+        </Column>
+        <Column field="endDate" header="EndDate" sortable>
+          <template #body="{ data }">
+            <p>{{ data.endDate.toLocaleDateString() }}</p>
+          </template>
+        </Column>
+        <Column field="status" header="Status" sortable>
+          <template #body="{ data }">
+            <Tag v-if="data.status == 'active'" severity="success">Active</Tag>
+            <Tag v-if="data.status == 'forcequit'" severity="warn">Force Quited</Tag>
+            <Tag v-if="data.status == 'finished'" severity="info">Finished</Tag>
+            <Tag v-if="data.status == 'crashed'" severity="danger">crashed</Tag>
+          </template>
+        </Column>
+        <Column field="userEmail" header="UserEmail" sortable />
+      </DataTable>
+    </Fieldset>
   </div>
 </template>
