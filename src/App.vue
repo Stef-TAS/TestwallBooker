@@ -30,6 +30,7 @@ import Search from '@primeicons/vue/search'
 import Warehouse from '@primeicons/vue/warehouse'
 import User from '@primeicons/vue/user'
 import Info from '@primeicons/vue/info-circle'
+import Bookmark from '@primeicons/vue/bookmark'
 
 const sidebarOpen = ref(true)
 
@@ -73,7 +74,7 @@ const TerminalToolTip =
                     </SidebarMenuItem>
                     <SidebarMenuItem>
                       <SidebarMenuButton @click="$router.push('/booking')">
-                        <Search />
+                        <Bookmark />
                         <span>Booking</span>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
