@@ -25,7 +25,7 @@ watch(DarkMode, (enabled) => {
 
   <div>
     <div class="grid grid-cols-2">
-      <Fieldset legend="Account information" class="max-w-4/5 w-full">
+      <Fieldset legend="Account information" class="max-w-4/5 w-full h-min">
         <div class="flex flex-col text-sm p-2">
           <div class="flex justify-between">
             <span class="text-color">Username</span>
@@ -59,10 +59,10 @@ watch(DarkMode, (enabled) => {
           </div>
         </div>
       </Fieldset>
-      <Fieldset legend="Settings" class="max-w-4/5 w-full">
+      <Fieldset legend="Settings" class="max-w-4/5 w-full h-min">
         <div class="flex flex-col text-sm p-2">
           <div class="flex justify-between">
-            <img src="" alt="profile picture" />
+            <img src="/src/data/avatar.png" alt="profile picture" class="rounded-xl shadow-lg" />
           </div>
         </div>
         <Divider />
