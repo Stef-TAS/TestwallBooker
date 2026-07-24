@@ -1,9 +1,12 @@
 <script lang="ts" setup>
-import { CommandMenu, Dialog } from 'primevue'
+import { Button, CommandMenu, Dialog } from 'primevue'
 import Terminal from 'primevue/terminal'
 import TerminalService from 'primevue/terminalservice'
 
 import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
+import Toast from 'primevue/toast'
+import { useToast } from 'primevue/usetoast'
+const toast = useToast()
 
 async function copyCommandToClipboard(commandName: string) {
   try {
@@ -75,6 +78,13 @@ const groupedCommands = computed(() => {
       keywords: [command.commandCategory, command.commandDescription],
       command: () => {
         void copyCommandToClipboard(command.commandName)
+        toast.add({
+          severity: 'info',
+          summary: 'Copied to Clipboard',
+          detail:
+            'The selected Command was copied to your Clipboard, please paste it into the terminal.',
+          life: 10000,
+        })
       },
     })),
   }))
@@ -112,6 +122,7 @@ onBeforeUnmount(() => {
 const visible = ref(false)
 </script>
 <template>
+  <Toast />
   <div class="mb-4">
     <p class="text-2xl">Terminal</p>
     <p class="text-sm">

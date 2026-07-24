@@ -29,8 +29,13 @@ import Code from '@primeicons/vue/code'
 import Search from '@primeicons/vue/search'
 import Warehouse from '@primeicons/vue/warehouse'
 import User from '@primeicons/vue/user'
+import Info from '@primeicons/vue/info-circle'
 
 const sidebarOpen = ref(true)
+
+const canAccessTerminal = ref(true)
+const TerminalToolTip =
+  '<div class="font-semibold text-sm">Missing Access</div><div class="opacity-75 text-sm mt-1">You currently have no active Bookings. Please book a Terminal before accessing the Terminal.</div>'
 </script>
 
 <template>
@@ -73,10 +78,20 @@ const sidebarOpen = ref(true)
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                     <SidebarMenuItem>
-                      <SidebarMenuButton @click="$router.push('/terminal')">
-                        <Code />
-                        <span>Pseudo Terminal</span>
-                      </SidebarMenuButton>
+                      <div class="flex items-center gap-2 w-full">
+                        <SidebarMenuButton
+                          @click="$router.push('/terminal')"
+                          :disabled="canAccessTerminal == false"
+                          class="flex-1"
+                        >
+                          <Code />
+                          <span>Pseudo Terminal</span>
+                        </SidebarMenuButton>
+                        <Info
+                          v-if="canAccessTerminal == false"
+                          v-tooltip.top="{ value: TerminalToolTip, escape: false }"
+                        />
+                      </div>
                     </SidebarMenuItem>
                     <SidebarMenuItem>
                       <SidebarMenuButton @click="$router.push('/query')">
