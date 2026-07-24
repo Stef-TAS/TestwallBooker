@@ -5,6 +5,16 @@ import TerminalService from 'primevue/terminalservice'
 
 import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
 
+async function copyCommandToClipboard(commandName: string) {
+  try {
+    await navigator.clipboard.writeText(commandName)
+    visible.value = false
+    TerminalService.emit('response', `Copied command to clipboard: ${commandName}`)
+  } catch {
+    TerminalService.emit('response', `Failed to copy command: ${commandName}`)
+  }
+}
+
 const commandHandler = (text: string) => {
   const argsIndex = text.indexOf(' ')
   const command = argsIndex !== -1 ? text.substring(0, argsIndex) : text
@@ -63,6 +73,9 @@ const groupedCommands = computed(() => {
       label: command.commandName,
       commandDescription: command.commandDescription,
       keywords: [command.commandCategory, command.commandDescription],
+      command: () => {
+        void copyCommandToClipboard(command.commandName)
+      },
     })),
   }))
 })
@@ -112,15 +125,22 @@ const visible = ref(false)
     />
   </div>
   <div>
-    <span @click="visible = true"
-      >Press
-      <kbd
-        class="bg-surface-100 dark:bg-surface-950 px-2 py-1 rounded-md border border-surface-200 dark:border-surface-700/50 text-sm ml-2"
-        >CTRL/CMD/ + L</kbd
-      ></span
-    >
-    <Dialog v-model:visible="visible" modal maximizable class="w-4/5">
-      <CommandMenu :model="groupedCommands" placeholder="Search for commands..." class="mx-auto">
+    <div class="m-4 justify-self-center">
+      <span @click="visible = true"
+        >Press
+        <kbd
+          class="bg-surface-100 dark:bg-surface-950 px-2 py-1 rounded-md border border-surface-200 dark:border-surface-700/50 text-sm ml-2"
+          >CTRL/CMD/ + L</kbd
+        >
+        for command list</span
+      >
+    </div>
+    <Dialog v-model:visible="visible" modal :closable="false" :showHeader="false" class="w-4/5">
+      <CommandMenu
+        :model="groupedCommands"
+        placeholder="Search for commands..."
+        class="mx-auto mt-5"
+      >
         <template #submenulabel="{ item }">
           <span class="px-2.25">{{ item.label }}</span>
         </template>

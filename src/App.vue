@@ -67,6 +67,12 @@ const sidebarOpen = ref(true)
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                     <SidebarMenuItem>
+                      <SidebarMenuButton @click="$router.push('/booking')">
+                        <Search />
+                        <span>Booking</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    <SidebarMenuItem>
                       <SidebarMenuButton @click="$router.push('/terminal')">
                         <Code />
                         <span>Pseudo Terminal</span>
@@ -85,7 +91,7 @@ const sidebarOpen = ref(true)
             <SidebarFooter>
               <SidebarMenu>
                 <SidebarMenuItem>
-                  <SidebarMenuButton>
+                  <SidebarMenuButton @click="$router.push('/account')">
                     <User />
                     <span>John Doe</span>
                   </SidebarMenuButton>
