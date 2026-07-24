@@ -133,6 +133,7 @@ const visible = ref(false)
     <Terminal
       welcomeMessage='Welcome to the Testwall Terminal. Type "help" for available commands.'
       prompt="$"
+      class="w-full max-w-4/5 justify-self-center shadow-xl"
     />
   </div>
   <div>

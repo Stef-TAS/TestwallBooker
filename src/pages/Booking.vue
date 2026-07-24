@@ -358,12 +358,13 @@ const bookingend = ref(new Date(Date.now()))
   <div>
     <Fieldset legend="Booking History" class="max-w-4/5 w-full justify-self-center">
       <DataTable
+        v-if="bookings.length > 0"
         :value="bookings"
         tableStyle="min-width: 50rem"
         stripedRows
         removableSort
         paginator
-        :rows="5"
+        :rows="10"
         :rowsPerPageOptions="[5, 10, 50, 100, 150]"
       >
         <Column field="bookingId" header="BookingId" sortable />
@@ -388,6 +389,12 @@ const bookingend = ref(new Date(Date.now()))
         </Column>
         <Column field="userEmail" header="UserEmail" sortable />
       </DataTable>
+      <p
+        v-if="bookings.length < 1"
+        class="text-2xl opacity-40 justify-self-center align-middle p-10"
+      >
+        No Bookings found
+      </p>
     </Fieldset>
   </div>
 </template>

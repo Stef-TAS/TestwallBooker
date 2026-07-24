@@ -56,8 +56,10 @@ onMounted(() => {
       :value="testwalls"
       removableSort
       paginator
-      :rows="10"
+      :rows="20"
       :rowsPerPageOptions="[5, 10, 20, 50]"
+      stripedRows
+      class="shadow-xl"
     >
       <Column field="testwallId" header="id" sortable />
       <Column field="testwallName" header="Testwall" sortable />
@@ -68,7 +70,7 @@ onMounted(() => {
         </template>
       </Column>
       <Column field="user" header="User" sortable />
-      <Column field="ipAddress" header="User" sortable />
+      <Column field="ipAddress" header="IP" sortable />
     </DataTable>
   </div>
 </template>
