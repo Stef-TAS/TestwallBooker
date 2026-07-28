@@ -95,12 +95,14 @@ const TerminalToolTip =
                         />
                       </div>
                     </SidebarMenuItem>
-                    <SidebarMenuItem>
-                      <SidebarMenuButton @click="$router.push('/query')">
-                        <Search />
-                        <span>Query</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
+                    <!--
+                      <SidebarMenuItem>
+                        <SidebarMenuButton @click="$router.push('/query')">
+                          <Search />
+                          <span>Query</span>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                      -->
                   </SidebarMenu>
                 </SidebarGroupContent>
               </SidebarGroup>

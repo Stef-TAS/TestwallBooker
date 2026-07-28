@@ -125,20 +125,20 @@ const bookingend = ref(new Date(Date.now()))
               <div class="flex flex-col text-sm p-2">
                 <div class="flex justify-between">
                   <span class="text-color">Username</span>
-                  <span class="text-muted-color">Dingus</span>
+                  <span class="text-muted-color">User</span>
                 </div>
                 <div class="flex justify-between">
                   <span class="text-color">Email</span>
-                  <span class="text-muted-color">dingus@ttcontrol.com</span>
+                  <span class="text-muted-color">User@ttcontrol.com</span>
                 </div>
                 <Divider />
                 <div class="flex justify-between">
                   <span class="text-color">First Name</span>
-                  <span class="text-muted-color">Dingus</span>
+                  <span class="text-muted-color">User</span>
                 </div>
                 <div class="flex justify-between">
                   <span class="text-color">Last Name</span>
-                  <span class="text-muted-color">Bingus</span>
+                  <span class="text-muted-color">Test</span>
                 </div>
                 <Divider />
                 <div class="flex justify-between">
@@ -276,11 +276,11 @@ const bookingend = ref(new Date(Date.now()))
                   <div class="flex flex-col text-sm p-2">
                     <div class="flex justify-between">
                       <span class="text-color">Username</span>
-                      <span class="text-muted-color">Dingus</span>
+                      <span class="text-muted-color">User</span>
                     </div>
                     <div class="flex justify-between">
                       <span class="text-color">Email</span>
-                      <span class="text-muted-color">dingus@ttcontrol.com</span>
+                      <span class="text-muted-color">User@ttcontrol.com</span>
                     </div>
                   </div>
                 </Fieldset>
