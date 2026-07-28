@@ -3,6 +3,7 @@ import { defineStore } from 'pinia'
 import { getCookie } from './cookiehelper'
 
 export type Account = {
+  id: number
   username: string
   email: string
   firstName: string
