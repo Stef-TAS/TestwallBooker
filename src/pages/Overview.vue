@@ -2,13 +2,16 @@
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import { onMounted } from 'vue'
-import { Tag } from 'primevue'
+import { Button, Tag } from 'primevue'
 import { storeToRefs } from 'pinia'
 import { useTestwallsStore } from '../stores/testwalls'
+import { useAccountStore } from '@/stores/account'
 
 const testwallsStore = useTestwallsStore()
 const { testwalls, isLoading, loadError } = storeToRefs(testwallsStore)
 const { loadTestwalls } = testwallsStore
+
+const accountStore = useAccountStore()
 
 onMounted(() => {
   void loadTestwalls()
@@ -41,6 +44,11 @@ onMounted(() => {
       </Column>
       <Column field="user" header="User" sortable />
       <Column field="ipAddress" header="IP" sortable />
+      <Column filed="" header="Actions" v-if="accountStore.account?.isAdmin">
+        <template #body="{ data }">
+          <Button v-if="data.isAvailable == false">Terminate</Button>
+        </template>
+      </Column>
     </DataTable>
   </div>
 </template>

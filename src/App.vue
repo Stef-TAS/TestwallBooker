@@ -33,7 +33,7 @@ import Info from '@primeicons/vue/info-circle'
 import Bookmark from '@primeicons/vue/bookmark'
 import Eye from '@primeicons/vue/eye'
 import EyeSlash from '@primeicons/vue/eye-slash'
-import { Card, Divider, FloatLabel, InputPassword, InputText, InputIcon } from 'primevue'
+import { Card, Divider, FloatLabel, InputPassword, InputText, InputIcon, Button } from 'primevue'
 import { useAccountStore } from './stores/account'
 import { storeToRefs } from 'pinia'
 
@@ -42,7 +42,13 @@ const accountStore = useAccountStore()
 const AccountEmail = ref('')
 const AccountPassword = ref('')
 
-const mask = ref(false)
+const loginStatus = ref('')
+
+async function login() {
+  loginStatus.value = await accountStore.TryLogin(AccountEmail.value, AccountPassword.value)
+}
+
+const mask = ref(true)
 
 const sidebarOpen = ref(true)
 
@@ -52,7 +58,7 @@ const TerminalToolTip =
 </script>
 
 <template>
-  <div v-if="accountStore.loggedIn">
+  <div v-if="!accountStore.loggedIn">
     <SidebarLayout>
       <Sidebar id="mainsidebar" v-model:open="sidebarOpen" :overlay="false" collapsible="icon">
         <SidebarSpacer />
@@ -141,7 +147,8 @@ const TerminalToolTip =
   <div v-else class="flex items-center justify-center h-screen">
     <Card class="w-full max-w-sm">
       <template #content>
-        <p>Testwall Booker</p>
+        <p class="text-4xl text-blue-600 dark:text-sky-400">Testwall Booker</p>
+        <p class="opacity-50">The internal booking system for all currently available Testwalls</p>
         <Divider class="mb-8">Login</Divider>
         <div>
           <FloatLabel class="mb-8">
@@ -149,7 +156,7 @@ const TerminalToolTip =
             <label for="account_Email">Email</label>
           </FloatLabel>
           <FloatLabel>
-            <div class="relative">
+            <div class="relative mb-8">
               <InputPassword
                 id="account_Password"
                 v-model="AccountPassword"
@@ -166,6 +173,13 @@ const TerminalToolTip =
             </div>
             <label for="account_Email">Password</label>
           </FloatLabel>
+          <Button
+            class="w-full"
+            :disabled="AccountEmail.length == 0 || AccountPassword.length == 0"
+            @click="login"
+            >Login</Button
+          >
+          <span class="text-red-400 block text-center mt-2">{{ loginStatus }}</span>
         </div>
       </template>
     </Card>

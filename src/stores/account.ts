@@ -27,5 +27,11 @@ export const useAccountStore = defineStore('account', () => {
     loggedIn.value = true
   }
 
-  return { account, loggedIn }
+  async function TryLogin(email: string, password: string) {
+    //do server shenanigans
+
+    return 'Something failed'
+  }
+
+  return { account, loggedIn, TryLogin }
 })

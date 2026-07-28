@@ -9,7 +9,10 @@ import { useToast } from 'primevue/usetoast'
 import { storeToRefs } from 'pinia'
 import { useTestwallsStore } from '../stores/testwalls'
 import { useCommandsStore, type Command } from '../stores/commands'
+import { useAccountStore } from '@/stores/account'
 const toast = useToast()
+
+const accountStore = useAccountStore()
 
 async function copyCommandToClipboard(commandName: string) {
   try {
@@ -118,6 +121,7 @@ const visible = ref(false)
   <div class="mb-4">
     <p>Admin Terminal Select</p>
     <Select
+      v-if="accountStore.account?.isAdmin"
       :options="testwalls"
       placeholder="Select a Testwall"
       optionLabel="testwallName"
