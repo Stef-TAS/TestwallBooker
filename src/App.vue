@@ -31,7 +31,18 @@ import Warehouse from '@primeicons/vue/warehouse'
 import User from '@primeicons/vue/user'
 import Info from '@primeicons/vue/info-circle'
 import Bookmark from '@primeicons/vue/bookmark'
-import { Divider } from 'primevue'
+import Eye from '@primeicons/vue/eye'
+import EyeSlash from '@primeicons/vue/eye-slash'
+import { Card, Divider, FloatLabel, InputPassword, InputText, InputIcon } from 'primevue'
+import { useAccountStore } from './stores/account'
+import { storeToRefs } from 'pinia'
+
+const accountStore = useAccountStore()
+
+const AccountEmail = ref('')
+const AccountPassword = ref('')
+
+const mask = ref(false)
 
 const sidebarOpen = ref(true)
 
@@ -41,7 +52,7 @@ const TerminalToolTip =
 </script>
 
 <template>
-  <div>
+  <div v-if="accountStore.loggedIn">
     <SidebarLayout>
       <Sidebar id="mainsidebar" v-model:open="sidebarOpen" :overlay="false" collapsible="icon">
         <SidebarSpacer />
@@ -126,5 +137,37 @@ const TerminalToolTip =
         <RouterView />
       </SidebarMain>
     </SidebarLayout>
+  </div>
+  <div v-else class="flex items-center justify-center h-screen">
+    <Card class="w-full max-w-sm">
+      <template #content>
+        <p>Testwall Booker</p>
+        <Divider class="mb-8">Login</Divider>
+        <div>
+          <FloatLabel class="mb-8">
+            <InputText id="account_Email" v-model="AccountEmail" class="w-full" />
+            <label for="account_Email">Email</label>
+          </FloatLabel>
+          <FloatLabel>
+            <div class="relative">
+              <InputPassword
+                id="account_Password"
+                v-model="AccountPassword"
+                class="w-full"
+                :mask="mask"
+              />
+              <InputIcon
+                class="cursor-pointer absolute right-3 top-1/2 -translate-y-1/2"
+                @click="mask = !mask"
+              >
+                <Eye v-if="mask" />
+                <EyeSlash v-else />
+              </InputIcon>
+            </div>
+            <label for="account_Email">Password</label>
+          </FloatLabel>
+        </div>
+      </template>
+    </Card>
   </div>
 </template>
