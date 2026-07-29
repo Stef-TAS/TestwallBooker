@@ -8,6 +8,7 @@ export type Account = {
   last_name: string | null
   location: string | null
   timezone: string | null
+  profile_picture: string | null
   created_at: string
 }
 
@@ -89,21 +90,39 @@ export function useAccounts() {
     lastName?: string,
     location?: string,
     timezone?: string,
-    profilePicture?: Blob,
+    profilePicture?: Blob | null,
   ): Promise<boolean> {
     loading.value = true
     error.value = null
     try {
+      const payload: Record<string, unknown> = {}
+
+      if (firstName !== undefined) {
+        payload.first_name = firstName
+      }
+
+      if (lastName !== undefined) {
+        payload.last_name = lastName
+      }
+
+      if (location !== undefined) {
+        payload.location = location
+      }
+
+      if (timezone !== undefined) {
+        payload.timezone = timezone
+      }
+
+      if (profilePicture instanceof Blob) {
+        payload.profile_picture = await blobToBase64(profilePicture)
+      } else if (profilePicture === null) {
+        payload.profile_picture = null
+      }
+
       const res = await fetch(`/api/accounts/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          first_name: firstName,
-          last_name: lastName,
-          location,
-          timezone,
-          profile_picture: profilePicture ? await blobToBase64(profilePicture) : null,
-        }),
+        body: JSON.stringify(payload),
       })
       if (!res.ok) throw new Error('Failed to update account')
       return true

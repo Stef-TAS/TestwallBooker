@@ -23,6 +23,9 @@ import Column from 'primevue/column'
 import ColumnGroup from 'primevue/columngroup' // optional
 import Row from 'primevue/row' // optional
 import { useTestwallsStore } from '../stores/testwalls'
+import { useAccountStore } from '@/stores/account'
+
+const accountStore = useAccountStore()
 
 const testwallsStore = useTestwallsStore()
 const { testwalls } = storeToRefs(testwallsStore)
@@ -125,33 +128,41 @@ const bookingend = ref(new Date(Date.now()))
               <div class="flex flex-col text-sm p-2">
                 <div class="flex justify-between">
                   <span class="text-color">Username</span>
-                  <span class="text-muted-color">User</span>
+                  <span class="text-muted-color">{{ accountStore.account?.username }}</span>
                 </div>
                 <div class="flex justify-between">
                   <span class="text-color">Email</span>
-                  <span class="text-muted-color">User@ttcontrol.com</span>
+                  <span class="text-muted-color">{{ accountStore.account?.email }}</span>
                 </div>
                 <Divider />
                 <div class="flex justify-between">
                   <span class="text-color">First Name</span>
-                  <span class="text-muted-color">User</span>
+                  <span class="text-muted-color">{{ accountStore.account?.firstName }}</span>
                 </div>
                 <div class="flex justify-between">
                   <span class="text-color">Last Name</span>
-                  <span class="text-muted-color">Test</span>
+                  <span class="text-muted-color">{{ accountStore.account?.lastName }}</span>
                 </div>
                 <Divider />
                 <div class="flex justify-between">
                   <span class="text-color">Access Right(s)</span>
-                  <span class="text-muted-color">Testwall, Query, Admin</span>
+                  <span class="text-muted-color">
+                    <Tag v-if="accountStore.account?.isAdmin" severity="danger">Admin</Tag>
+                    <Tag v-if="accountStore.account?.canTestwall" severity="info">Testwall</Tag>
+                    <Tag
+                      v-if="!accountStore.account?.isAdmin && !accountStore.account?.canTestwall"
+                      severity="success"
+                      >Observer</Tag
+                    >
+                  </span>
                 </div>
                 <div class="flex justify-between">
                   <span class="text-color">Location</span>
-                  <span class="text-muted-color">TTControl GmbH, AUT, Wien</span>
+                  <span class="text-muted-color">{{ accountStore.account?.location }}</span>
                 </div>
                 <div class="flex justify-between">
                   <span class="text-color">Timezone</span>
-                  <span class="text-muted-color">Europe/Vienna</span>
+                  <span class="text-muted-color">{{ accountStore.account?.timezone }}</span>
                 </div>
               </div>
               <div class="flex pt-5 justify-end">

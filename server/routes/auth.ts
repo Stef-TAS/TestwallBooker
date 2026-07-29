@@ -4,6 +4,22 @@ import type { Request, Response } from 'express'
 
 const router = Router()
 
+function normalizeProfilePicture(value: unknown): string | null {
+  if (value === null || value === undefined) {
+    return null
+  }
+
+  if (Buffer.isBuffer(value)) {
+    return value.toString('utf8')
+  }
+
+  if (typeof value === 'string') {
+    return value
+  }
+
+  return null
+}
+
 // Login endpoint
 router.post('/login', async (req: Request, res: Response) => {
   const { email, password } = req.body as { email?: string; password?: string }
@@ -16,7 +32,7 @@ router.post('/login', async (req: Request, res: Response) => {
   try {
     // Find user by email
     const [users] = await pool.execute(
-      'SELECT id, username, email, first_name, last_name, location, timezone FROM accounts WHERE email = ?',
+      'SELECT id, username, email, first_name, last_name, location, timezone, profile_picture FROM accounts WHERE email = ?',
       [email],
     )
 
@@ -58,6 +74,7 @@ router.post('/login', async (req: Request, res: Response) => {
       lastName: user.last_name,
       location: user.location,
       timezone: user.timezone,
+      profilePicture: normalizeProfilePicture(user.profile_picture),
       isAdmin: roles.includes('admin'),
       canTestwall: roles.includes('operator'),
     }

@@ -1,15 +1,24 @@
 <script lang="ts" setup>
 import { useAccountStore } from '@/stores/account'
 import { useAccounts } from '@/composables/useAccounts'
-import { Divider, ToggleSwitch, Button, InputText, Message } from 'primevue'
+import { Divider, ToggleSwitch, Button, InputText, Message, Tag } from 'primevue'
 import Fieldset from 'primevue/fieldset'
 import Select from 'primevue/select'
-import { onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 
 const accountStore = useAccountStore()
-const { registerAccount, loading: accountsLoading, error: accountsError } = useAccounts()
+const {
+  registerAccount,
+  updateAccount,
+  loading: accountsLoading,
+  error: accountsError,
+} = useAccounts()
+
+const defaultAvatarUrl = new URL('../data/avatar.png', import.meta.url).href
 
 const DarkMode = ref(false)
+const profilePictureFile = ref<File | null>(null)
+const profilePicturePreview = ref<string | null>(null)
 
 // Form refs for adding new user
 const newUserForm = ref({
@@ -24,6 +33,12 @@ const newUserForm = ref({
 
 const formSuccess = ref(false)
 const formError = ref<string | null>(null)
+const pictureSuccess = ref(false)
+const pictureError = ref<string | null>(null)
+
+const currentProfilePicture = computed(() => {
+  return profilePicturePreview.value || accountStore.account?.profilePicture || defaultAvatarUrl
+})
 
 onMounted(() => {
   const isDark = document.documentElement.classList.contains('dark')
@@ -34,6 +49,45 @@ watch(DarkMode, (enabled) => {
   document.documentElement.classList.toggle('dark', enabled)
   localStorage.setItem('theme', enabled ? 'dark' : 'light')
 })
+
+async function handleProfilePictureChange(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0] ?? null
+
+  profilePictureFile.value = file
+  profilePicturePreview.value = file ? await fileToDataUrl(file) : null
+}
+
+async function handleSaveProfilePicture() {
+  pictureError.value = null
+  pictureSuccess.value = false
+
+  if (!accountStore.account || !profilePictureFile.value) {
+    pictureError.value = 'Choose an image before saving'
+    return
+  }
+
+  const updated = await updateAccount(
+    accountStore.account.id,
+    accountStore.account.firstName,
+    accountStore.account.lastName,
+    accountStore.account.location,
+    accountStore.account.timezone,
+    profilePictureFile.value,
+  )
+
+  if (updated) {
+    accountStore.account.profilePicture = profilePicturePreview.value
+    accountStore.persistAccountToCookie(accountStore.account)
+    profilePictureFile.value = null
+    pictureSuccess.value = true
+    setTimeout(() => {
+      pictureSuccess.value = false
+    }, 3000)
+  } else {
+    pictureError.value = accountsError.value || 'Failed to update profile picture'
+  }
+}
 
 async function handleAddUser() {
   formError.value = null
@@ -73,6 +127,15 @@ async function handleAddUser() {
     formError.value = accountsError.value || 'Failed to create user'
   }
 }
+
+function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(String(reader.result))
+    reader.onerror = () => reject(new Error('Failed to read image'))
+    reader.readAsDataURL(file)
+  })
+}
 </script>
 <template>
   <div class="mb-4">
@@ -86,40 +149,61 @@ async function handleAddUser() {
         <div class="flex flex-col text-sm p-2">
           <div class="flex justify-between">
             <span class="text-color">Username</span>
-            <span class="text-muted-color">User</span>
+            <span class="text-muted-color">{{ accountStore.account?.username }}</span>
           </div>
           <div class="flex justify-between">
             <span class="text-color">Email</span>
-            <span class="text-muted-color">User@ttcontrol.com</span>
+            <span class="text-muted-color">{{ accountStore.account?.email }}</span>
           </div>
           <Divider />
           <div class="flex justify-between">
             <span class="text-color">First Name</span>
-            <span class="text-muted-color">User</span>
+            <span class="text-muted-color">{{ accountStore.account?.firstName }}</span>
           </div>
           <div class="flex justify-between">
             <span class="text-color">Last Name</span>
-            <span class="text-muted-color">Test</span>
+            <span class="text-muted-color">{{ accountStore.account?.lastName }}</span>
           </div>
           <Divider />
           <div class="flex justify-between">
             <span class="text-color">Access Right(s)</span>
-            <span class="text-muted-color">Testwall, Query, Admin</span>
+            <span class="text-muted-color">
+              <Tag v-if="accountStore.account?.isAdmin" severity="danger">Admin</Tag>
+              <Tag v-if="accountStore.account?.canTestwall" severity="info">Testwall</Tag>
+              <Tag
+                v-if="!accountStore.account?.isAdmin && !accountStore.account?.canTestwall"
+                severity="success"
+                >Observer</Tag
+              >
+            </span>
           </div>
           <div class="flex justify-between">
             <span class="text-color">Location</span>
-            <span class="text-muted-color">TTControl GmbH, AUT, Wien</span>
+            <span class="text-muted-color">{{ accountStore.account?.location }}</span>
           </div>
           <div class="flex justify-between">
             <span class="text-color">Timezone</span>
-            <span class="text-muted-color">Europe/Vienna</span>
+            <span class="text-muted-color">{{ accountStore.account?.timezone }}</span>
           </div>
         </div>
       </Fieldset>
       <Fieldset legend="Settings" class="max-w-4/5 w-full h-min">
         <div class="flex flex-col text-sm p-2">
-          <div class="flex justify-between">
-            <img src="/src/data/avatar.png" alt="profile picture" class="rounded-xl shadow-lg" />
+          <div class="flex flex-col gap-3 items-start">
+            <Message v-if="pictureSuccess" severity="success" text="Profile picture updated!" />
+            <Message v-if="pictureError" severity="error" :text="pictureError" />
+            <img
+              :src="currentProfilePicture"
+              alt="profile picture"
+              class="rounded-xl shadow-lg h-32 w-32 object-cover"
+            />
+            <input type="file" accept="image/*" @change="handleProfilePictureChange" />
+            <Button
+              label="Save profile picture"
+              icon="pi pi-image"
+              @click="handleSaveProfilePicture"
+              :loading="accountsLoading"
+            />
           </div>
         </div>
         <Divider />

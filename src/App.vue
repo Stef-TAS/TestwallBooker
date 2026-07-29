@@ -69,7 +69,7 @@ const TerminalToolTip =
                 <SidebarMenuItem>
                   <SidebarMenuButton @click="$router.push('/overview')">
                     <Warehouse />
-                    <span class="text-xl">Testwall Booker</span>
+                    <span class="text-xl">Wall Test Facility</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
@@ -147,7 +147,7 @@ const TerminalToolTip =
   <div v-else class="flex items-center justify-center h-screen">
     <Card class="w-full max-w-sm">
       <template #content>
-        <p class="text-4xl text-blue-600 dark:text-sky-400">Testwall Booker</p>
+        <p class="text-4xl text-blue-600 dark:text-sky-400">Wall Test Facility</p>
         <p class="opacity-50">The internal booking system for all currently available Testwalls</p>
         <Divider class="mb-8">Login</Divider>
         <div>

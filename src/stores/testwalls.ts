@@ -1,20 +1,52 @@
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 
 export type Testwall = {
-  testwallId: number
-  testwallName: string
-  isAvailable: boolean
-  user: string
+  id: number
+  name: string
+  ip_address: string
+  created_at?: string
 }
 
-const testwallsFileUrl = new URL('../data/testwalls.json', import.meta.url).href
+export type TestwallWithAvailability = Testwall & {
+  isAvailable: boolean
+  currentUser?: string
+}
+
+export type Booking = {
+  id: number
+  testwall_id: number
+  user_id: number
+  username?: string
+  from_time: string
+  to_time: string
+}
 
 export const useTestwallsStore = defineStore('testwalls', () => {
   const testwalls = ref<Testwall[]>([])
+  const bookings = ref<Booking[]>([])
   const isLoading = ref(false)
   const loadError = ref('')
   const hasLoaded = ref(false)
+
+  // Computed property for testwalls with availability
+  const testwallsWithAvailability = computed((): TestwallWithAvailability[] => {
+    return testwalls.value.map((testwall) => {
+      const now = new Date()
+      const activeBooking = bookings.value.find(
+        (booking) =>
+          booking.testwall_id === testwall.id &&
+          new Date(booking.from_time) <= now &&
+          now < new Date(booking.to_time),
+      )
+
+      return {
+        ...testwall,
+        isAvailable: !activeBooking,
+        currentUser: activeBooking?.username,
+      }
+    })
+  })
 
   async function loadTestwalls(force = false) {
     if (isLoading.value) {
@@ -29,18 +61,21 @@ export const useTestwallsStore = defineStore('testwalls', () => {
       isLoading.value = true
       loadError.value = ''
 
-      const response = await fetch(testwallsFileUrl)
-      if (!response.ok) {
-        throw new Error(`Request failed with status ${response.status}`)
+      const [testwallsRes, bookingsRes] = await Promise.all([
+        fetch('/api/testwalls'),
+        fetch('/api/bookings'),
+      ])
+
+      if (!testwallsRes.ok) {
+        throw new Error(`Failed to fetch testwalls: ${testwallsRes.status}`)
       }
 
-      const contentType = response.headers.get('content-type') || ''
-      if (!contentType.includes('application/json')) {
-        throw new Error('Data file did not return JSON content')
+      if (!bookingsRes.ok) {
+        throw new Error(`Failed to fetch bookings: ${bookingsRes.status}`)
       }
 
-      const data = (await response.json()) as Testwall[]
-      testwalls.value = data
+      testwalls.value = (await testwallsRes.json()) as Testwall[]
+      bookings.value = (await bookingsRes.json()) as Booking[]
       hasLoaded.value = true
     } catch (error) {
       loadError.value = error instanceof Error ? error.message : 'Unknown error'
@@ -49,5 +84,13 @@ export const useTestwallsStore = defineStore('testwalls', () => {
     }
   }
 
-  return { testwalls, isLoading, loadError, hasLoaded, loadTestwalls }
+  return {
+    testwalls,
+    bookings,
+    testwallsWithAvailability,
+    isLoading,
+    loadError,
+    hasLoaded,
+    loadTestwalls,
+  }
 })
