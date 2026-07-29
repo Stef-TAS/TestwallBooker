@@ -44,7 +44,7 @@ onMounted(() => {
       </Column>
       <Column field="user" header="User" sortable />
       <Column field="ipAddress" header="IP" sortable />
-      <Column filed="" header="Actions" v-if="accountStore.account?.isAdmin">
+      <Column filed="" header="Actions" v-if="accountStore.showAdminContent">
         <template #body="{ data }">
           <Button v-if="data.isAvailable == false">Terminate</Button>
         </template>

@@ -58,7 +58,7 @@ const TerminalToolTip =
 </script>
 
 <template>
-  <div v-if="!accountStore.loggedIn">
+  <div v-if="accountStore.loggedIn">
     <SidebarLayout>
       <Sidebar id="mainsidebar" v-model:open="sidebarOpen" :overlay="false" collapsible="icon">
         <SidebarSpacer />

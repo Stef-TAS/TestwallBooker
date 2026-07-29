@@ -8,6 +8,7 @@ import accountsRouter from './routes/accounts'
 import testwallsRouter from './routes/testwalls'
 import bookingsRouter from './routes/bookings'
 import accessRightsRouter from './routes/access-rights'
+import authRouter from './routes/auth'
 
 const app = express()
 const PORT = Number(process.env.SERVER_PORT ?? 3001)
@@ -17,6 +18,7 @@ app.use(express.json())
 
 app.use('/api/logs', logsRouter)
 app.use('/api/history', historyRouter)
+app.use('/api/auth', authRouter)
 app.use('/api/accounts', accountsRouter)
 app.use('/api/testwalls', testwallsRouter)
 app.use('/api/bookings', bookingsRouter)

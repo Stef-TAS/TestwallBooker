@@ -1,6 +1,6 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
-import { getCookie } from './cookiehelper'
+import { getCookie, setCookie, deleteCookie } from './cookiehelper'
 
 export type Account = {
   id: number
@@ -21,6 +21,9 @@ export const useAccountStore = defineStore('account', () => {
 
   const account = ref<Account | undefined>()
   const loggedIn = ref(false)
+  const loginError = ref<string | null>(null)
+  const loginLoading = ref(false)
+  const showAdminContent = ref(false)
 
   if (rawAccountCookie.value != undefined) // it is set
   {
@@ -28,11 +31,49 @@ export const useAccountStore = defineStore('account', () => {
     loggedIn.value = true
   }
 
-  async function TryLogin(email: string, password: string) {
-    //do server shenanigans
+  async function TryLogin(email: string, password: string): Promise<string> {
+    loginLoading.value = true
+    loginError.value = null
 
-    return 'Something failed'
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      })
+
+      const data = (await response.json()) as {
+        success?: boolean
+        account?: Account
+        error?: string
+      }
+
+      if (!response.ok || !data.success) {
+        loginError.value = data.error || 'Login failed'
+        return data.error || 'Login failed'
+      }
+
+      // Store account in state and cookie
+      account.value = data.account
+      loggedIn.value = true
+      setCookie('account', data.account!)
+
+      return '' // empty = success
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Network error'
+      loginError.value = errorMsg
+      return errorMsg
+    } finally {
+      loginLoading.value = false
+    }
   }
 
-  return { account, loggedIn, TryLogin }
+  function logout() {
+    account.value = undefined
+    loggedIn.value = false
+    loginError.value = null
+    deleteCookie('account')
+  }
+
+  return { account, loggedIn, loginError, loginLoading, showAdminContent, TryLogin, logout }
 })

@@ -121,7 +121,7 @@ const visible = ref(false)
   <div class="mb-4">
     <p>Admin Terminal Select</p>
     <Select
-      v-if="accountStore.account?.isAdmin"
+      v-if="accountStore.showAdminContent"
       :options="testwalls"
       placeholder="Select a Testwall"
       optionLabel="testwallName"
