@@ -36,10 +36,13 @@ onMounted(() => {
     >
       <Column field="id" header="ID" sortable />
       <Column field="name" header="Testwall" sortable />
-      <Column field="isAvailable" header="Availability" sortable>
+      <Column field="availabilityStatus" header="Availability" sortable>
         <template #body="{ data }">
-          <Tag v-if="data.isAvailable" severity="success">Available</Tag>
-          <Tag v-else severity="danger">In Use</Tag>
+          <Tag v-if="data.availabilityStatus === 'available'" severity="success">Available</Tag>
+          <Tag v-else-if="data.availabilityStatus === 'unavailable'" severity="warn"
+            >Unavailable</Tag
+          >
+          <Tag v-else severity="danger">Out of Service</Tag>
         </template>
       </Column>
       <Column field="currentUser" header="Current User" sortable>

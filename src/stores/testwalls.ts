@@ -10,6 +10,7 @@ export type Testwall = {
 
 export type TestwallWithAvailability = Testwall & {
   isAvailable: boolean
+  availabilityStatus: 'available' | 'unavailable' | 'out_of_service'
   currentUser?: string
 }
 
@@ -20,6 +21,7 @@ export type Booking = {
   username?: string
   from_time: string
   to_time: string
+  status?: string
 }
 
 export const useTestwallsStore = defineStore('testwalls', () => {
@@ -33,17 +35,35 @@ export const useTestwallsStore = defineStore('testwalls', () => {
   const testwallsWithAvailability = computed((): TestwallWithAvailability[] => {
     return testwalls.value.map((testwall) => {
       const now = new Date()
-      const activeBooking = bookings.value.find(
+      const currentBookings = bookings.value.filter(
         (booking) =>
           booking.testwall_id === testwall.id &&
           new Date(booking.from_time) <= now &&
           now < new Date(booking.to_time),
       )
 
+      const outOfServiceBooking = currentBookings.find((booking) => {
+        const normalizedStatus = (booking.status ?? '').toLowerCase()
+        return normalizedStatus === 'crashed' || normalizedStatus === 'forcequit'
+      })
+
+      const unavailableBooking = currentBookings.find(
+        (booking) => (booking.status ?? 'active').toLowerCase() === 'active',
+      )
+
+      const availabilityStatus: 'available' | 'unavailable' | 'out_of_service' = outOfServiceBooking
+        ? 'out_of_service'
+        : unavailableBooking
+          ? 'unavailable'
+          : 'available'
+
+      const blockingBooking = outOfServiceBooking ?? unavailableBooking
+
       return {
         ...testwall,
-        isAvailable: !activeBooking,
-        currentUser: activeBooking?.username,
+        isAvailable: availabilityStatus === 'available',
+        availabilityStatus,
+        currentUser: blockingBooking?.username,
       }
     })
   })
