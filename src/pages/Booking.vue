@@ -24,6 +24,7 @@ import ColumnGroup from 'primevue/columngroup' // optional
 import Row from 'primevue/row' // optional
 import { useTestwallsStore } from '../stores/testwalls'
 import { useAccountStore } from '@/stores/account'
+import { useBookings, type Booking as ApiBooking } from '@/composables/useBookings'
 
 const accountStore = useAccountStore()
 
@@ -31,69 +32,52 @@ const testwallsStore = useTestwallsStore()
 const { testwalls } = storeToRefs(testwallsStore)
 const { loadTestwalls } = testwallsStore
 
-type Booking = {
-  bookingId: string
-  testwallId: string
+type BookingHistory = {
+  id: number
+  testwallId: number
+  testwallName: string
   startDate: Date
   endDate: Date
   status: string
   userEmail: string
 }
 
-type BookingApi = {
-  bookingId: string
-  testwallId: string
-  startDate: string
-  endDate: string
-  status: string
-  userEmail: string
-}
+const { getBookingsByUser } = useBookings()
+const bookings = ref<BookingHistory[]>([])
 
-const bookings = ref<Booking[]>([])
-const bookingsFileUrl = new URL('../data/bookings.json', import.meta.url).href
-
-function parseBookingDate(value: string): Date {
-  const parts = value.split('/').map(Number)
-  if (parts.length !== 3 || parts.some((part) => Number.isNaN(part))) {
-    throw new Error(`Invalid booking date: ${value}`)
-  }
-
-  const month = parts[0] as number
-  const day = parts[1] as number
-  const year = parts[2] as number
-  const parsedDate = new Date(year, month - 1, day)
-
-  if (
-    Number.isNaN(parsedDate.getTime()) ||
-    parsedDate.getFullYear() !== year ||
-    parsedDate.getMonth() !== month - 1 ||
-    parsedDate.getDate() !== day
-  ) {
-    throw new Error(`Invalid booking date: ${value}`)
+function parseApiDate(value: string): Date {
+  const parsedDate = new Date(value)
+  if (Number.isNaN(parsedDate.getTime())) {
+    return new Date(0)
   }
 
   return parsedDate
 }
 
+function normalizeStatus(value: string | undefined): string {
+  if (!value) {
+    return 'active'
+  }
+
+  return value.toLowerCase()
+}
+
 async function loadBookings() {
-  try {
-    const response = await fetch(bookingsFileUrl)
-    if (!response.ok) {
-      throw new Error(`Request failed with status ${response.status}`)
-    }
+  if (!accountStore.account?.id) {
+    bookings.value = []
+    return
+  }
 
-    const contentType = response.headers.get('content-type') || ''
-    if (!contentType.includes('application/json')) {
-      throw new Error('Data file did not return JSON content')
-    }
-
-    const data = (await response.json()) as BookingApi[]
-    bookings.value = data.map((booking) => ({
-      ...booking,
-      startDate: parseBookingDate(booking.startDate),
-      endDate: parseBookingDate(booking.endDate),
-    }))
-  } catch (error) {}
+  const data = await getBookingsByUser(accountStore.account.id)
+  bookings.value = data.map((booking: ApiBooking) => ({
+    id: booking.id,
+    testwallId: booking.testwall_id,
+    testwallName: booking.testwall_name ?? `Testwall ${booking.testwall_id}`,
+    startDate: parseApiDate(booking.from_time),
+    endDate: parseApiDate(booking.to_time),
+    status: normalizeStatus(booking.status),
+    userEmail: booking.user_email ?? accountStore.account?.email ?? '',
+  }))
 }
 
 onMounted(() => {
@@ -348,8 +332,9 @@ const bookingend = ref(new Date(Date.now()))
         :rows="10"
         :rowsPerPageOptions="[5, 10, 50, 100, 150]"
       >
-        <Column field="bookingId" header="BookingId" sortable />
+        <Column field="id" header="BookingId" sortable />
         <Column field="testwallId" header="TestwallId" sortable />
+        <Column field="testwallName" header="Testwall" sortable />
         <Column field="startDate" header="StartDate" sortable>
           <template #body="{ data }">
             <p>{{ data.startDate.toLocaleDateString() }}</p>
@@ -366,6 +351,16 @@ const bookingend = ref(new Date(Date.now()))
             <Tag v-if="data.status == 'forcequit'" severity="warn">Force Quited</Tag>
             <Tag v-if="data.status == 'finished'" severity="info">Finished</Tag>
             <Tag v-if="data.status == 'crashed'" severity="danger">crashed</Tag>
+            <Tag
+              v-if="
+                data.status != 'active' &&
+                data.status != 'forcequit' &&
+                data.status != 'finished' &&
+                data.status != 'crashed'
+              "
+              severity="secondary"
+              >{{ data.status }}</Tag
+            >
           </template>
         </Column>
         <Column field="userEmail" header="UserEmail" sortable />

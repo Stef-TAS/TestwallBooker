@@ -6,8 +6,10 @@ export type Booking = {
   testwall_name?: string
   user_id: number
   username?: string
+  user_email?: string
   from_time: string
   to_time: string
+  status: string
   created_at?: string
 }
 
@@ -93,6 +95,7 @@ export function useBookings() {
     userId: number,
     fromTime: string,
     toTime: string,
+    status = 'active',
   ): Promise<Booking | null> {
     loading.value = true
     error.value = null
@@ -105,6 +108,7 @@ export function useBookings() {
           user_id: userId,
           from_time: fromTime,
           to_time: toTime,
+          status,
         }),
       })
       if (!res.ok) {
@@ -120,14 +124,32 @@ export function useBookings() {
     }
   }
 
-  async function updateBooking(id: number, fromTime: string, toTime: string): Promise<boolean> {
+  async function updateBooking(
+    id: number,
+    fromTime?: string,
+    toTime?: string,
+    status?: string,
+  ): Promise<boolean> {
     loading.value = true
     error.value = null
     try {
+      const payload: Record<string, string> = {}
+      if (fromTime !== undefined) {
+        payload.from_time = fromTime
+      }
+
+      if (toTime !== undefined) {
+        payload.to_time = toTime
+      }
+
+      if (status !== undefined) {
+        payload.status = status
+      }
+
       const res = await fetch(`/api/bookings/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ from_time: fromTime, to_time: toTime }),
+        body: JSON.stringify(payload),
       })
       if (!res.ok) throw new Error('Failed to update booking')
       return true

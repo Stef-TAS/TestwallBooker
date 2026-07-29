@@ -130,7 +130,10 @@ const TerminalToolTip =
                   <Divider />
                   <SidebarMenuButton @click="$router.push('/account')">
                     <User />
-                    <span>John Doe</span>
+                    <span
+                      >{{ accountStore.account?.firstName }}
+                      {{ accountStore.account?.lastName }}</span
+                    >
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               </SidebarMenu>

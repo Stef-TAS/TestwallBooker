@@ -70,6 +70,7 @@ export async function initDb() {
       user_id INT NOT NULL,
       from_time DATETIME NOT NULL,
       to_time DATETIME NOT NULL,
+      status VARCHAR(50) NOT NULL DEFAULT 'active',
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       FOREIGN KEY (testwall_id) REFERENCES testwalls(id) ON DELETE CASCADE,
@@ -79,6 +80,22 @@ export async function initDb() {
       INDEX idx_times (from_time, to_time)
     )
   `)
+
+  // Backward-compatible migration for databases created before the status column existed.
+  const [bookingStatusColumn] = await pool.execute(
+    `SELECT COUNT(*) AS count
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE()
+     AND TABLE_NAME = 'bookings'
+     AND COLUMN_NAME = 'status'`,
+  )
+
+  if ((bookingStatusColumn as any[])[0].count === 0) {
+    await pool.execute(`
+      ALTER TABLE bookings
+      ADD COLUMN status VARCHAR(50) NOT NULL DEFAULT 'active'
+    `)
+  }
 
   // Logs table
   await pool.execute(`

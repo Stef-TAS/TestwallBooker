@@ -7,7 +7,7 @@ const router = Router()
 // Get all bookings
 router.get('/', async (_req: Request, res: Response) => {
   const [rows] = await pool.execute(`
-    SELECT b.id, b.testwall_id, b.user_id, b.from_time, b.to_time, 
+    SELECT b.id, b.testwall_id, b.user_id, b.from_time, b.to_time, b.status,
            t.name as testwall_name, a.username
     FROM bookings b
     LEFT JOIN testwalls t ON b.testwall_id = t.id
@@ -21,7 +21,7 @@ router.get('/', async (_req: Request, res: Response) => {
 router.get('/testwall/:testwall_id', async (req: Request, res: Response) => {
   const { testwall_id } = req.params
   const [rows] = await pool.execute(
-    `SELECT b.id, b.testwall_id, b.user_id, b.from_time, b.to_time, a.username
+    `SELECT b.id, b.testwall_id, b.user_id, b.from_time, b.to_time, b.status, a.username
      FROM bookings b
      LEFT JOIN accounts a ON b.user_id = a.id
      WHERE b.testwall_id = ? ORDER BY b.from_time DESC`,
@@ -34,9 +34,10 @@ router.get('/testwall/:testwall_id', async (req: Request, res: Response) => {
 router.get('/user/:user_id', async (req: Request, res: Response) => {
   const { user_id } = req.params
   const [rows] = await pool.execute(
-    `SELECT b.id, b.testwall_id, b.user_id, b.from_time, b.to_time, t.name as testwall_name
+    `SELECT b.id, b.testwall_id, b.user_id, b.from_time, b.to_time, b.status, t.name as testwall_name, a.email as user_email
      FROM bookings b
      LEFT JOIN testwalls t ON b.testwall_id = t.id
+     LEFT JOIN accounts a ON b.user_id = a.id
      WHERE b.user_id = ? ORDER BY b.from_time DESC`,
     [user_id],
   )
@@ -65,11 +66,13 @@ router.post('/check-availability', async (req: Request, res: Response) => {
 
 // Create booking
 router.post('/', async (req: Request, res: Response) => {
-  const { testwall_id, user_id, from_time, to_time } = req.body
+  const { testwall_id, user_id, from_time, to_time, status } = req.body
   if (!testwall_id || !user_id || !from_time || !to_time) {
     res.status(400).json({ error: 'testwall_id, user_id, from_time, and to_time are required' })
     return
   }
+
+  const normalizedStatus = typeof status === 'string' && status.trim() ? status.trim() : 'active'
 
   // Check availability
   const [conflicts] = await pool.execute(
@@ -86,23 +89,43 @@ router.post('/', async (req: Request, res: Response) => {
   }
 
   await pool.execute(
-    'INSERT INTO bookings (testwall_id, user_id, from_time, to_time) VALUES (?, ?, ?, ?)',
-    [testwall_id, user_id, from_time, to_time],
+    'INSERT INTO bookings (testwall_id, user_id, from_time, to_time, status) VALUES (?, ?, ?, ?, ?)',
+    [testwall_id, user_id, from_time, to_time, normalizedStatus],
   )
   const [result] = await pool.execute('SELECT LAST_INSERT_ID() as id')
-  res.status(201).json((result as any[])[0])
+  res.status(201).json({ ...(result as any[])[0], status: normalizedStatus })
 })
 
 // Update booking
 router.put('/:id', async (req: Request, res: Response) => {
   const { id } = req.params
-  const { from_time, to_time } = req.body
+  const { from_time, to_time, status } = req.body
 
-  await pool.execute('UPDATE bookings SET from_time = ?, to_time = ? WHERE id = ?', [
-    from_time,
-    to_time,
-    id,
-  ])
+  const updates: string[] = []
+  const values: unknown[] = []
+
+  if (from_time !== undefined) {
+    updates.push('from_time = ?')
+    values.push(from_time)
+  }
+
+  if (to_time !== undefined) {
+    updates.push('to_time = ?')
+    values.push(to_time)
+  }
+
+  if (status !== undefined) {
+    updates.push('status = ?')
+    values.push(status)
+  }
+
+  if (updates.length === 0) {
+    res.status(400).json({ error: 'No booking fields provided for update' })
+    return
+  }
+
+  values.push(id)
+  await pool.execute(`UPDATE bookings SET ${updates.join(', ')} WHERE id = ?`, values)
   res.json({ success: true })
 })
 

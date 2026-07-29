@@ -86,18 +86,18 @@ SELECT id INTO @nova_06_id FROM testwalls WHERE name = 'Nova-06' LIMIT 1;
 
 SET @now := NOW();
 
-INSERT INTO bookings (testwall_id, user_id, from_time, to_time)
+INSERT INTO bookings (testwall_id, user_id, from_time, to_time, status)
 VALUES
-  (@atlas_01_id, @alice_user_id, DATE_SUB(@now, INTERVAL 2 DAY), DATE_ADD(DATE_SUB(@now, INTERVAL 2 DAY), INTERVAL 2 HOUR)),
-  (@atlas_01_id, @bob_user_id, DATE_ADD(@now, INTERVAL 1 DAY), DATE_ADD(DATE_ADD(@now, INTERVAL 1 DAY), INTERVAL 3 HOUR)),
-  (@atlas_02_id, @charlie_user_id, DATE_ADD(@now, INTERVAL 2 DAY), DATE_ADD(DATE_ADD(@now, INTERVAL 2 DAY), INTERVAL 90 MINUTE)),
-  (@atlas_02_id, @dana_user_id, DATE_ADD(@now, INTERVAL 4 DAY), DATE_ADD(DATE_ADD(@now, INTERVAL 4 DAY), INTERVAL 2 HOUR)),
-  (@orion_03_id, @elena_user_id, DATE_SUB(@now, INTERVAL 1 DAY), DATE_ADD(DATE_SUB(@now, INTERVAL 1 DAY), INTERVAL 4 HOUR)),
-  (@orion_03_id, @farid_user_id, DATE_ADD(@now, INTERVAL 3 DAY), DATE_ADD(DATE_ADD(@now, INTERVAL 3 DAY), INTERVAL 2 HOUR)),
-  (@orion_04_id, @grace_user_id, DATE_ADD(@now, INTERVAL 6 HOUR), DATE_ADD(@now, INTERVAL 8 HOUR)),
-  (@nova_05_id, @alice_user_id, DATE_ADD(@now, INTERVAL 5 DAY), DATE_ADD(DATE_ADD(@now, INTERVAL 5 DAY), INTERVAL 2 HOUR)),
-  (@nova_05_id, @bob_user_id, DATE_ADD(@now, INTERVAL 7 DAY), DATE_ADD(DATE_ADD(@now, INTERVAL 7 DAY), INTERVAL 90 MINUTE)),
-  (@nova_06_id, @admin_user_id, DATE_ADD(@now, INTERVAL 1 DAY), DATE_ADD(DATE_ADD(@now, INTERVAL 1 DAY), INTERVAL 1 HOUR));
+  (@atlas_01_id, @alice_user_id, DATE_SUB(@now, INTERVAL 2 DAY), DATE_ADD(DATE_SUB(@now, INTERVAL 2 DAY), INTERVAL 2 HOUR), 'finished'),
+  (@atlas_01_id, @bob_user_id, DATE_ADD(@now, INTERVAL 1 DAY), DATE_ADD(DATE_ADD(@now, INTERVAL 1 DAY), INTERVAL 3 HOUR), 'active'),
+  (@atlas_02_id, @charlie_user_id, DATE_ADD(@now, INTERVAL 2 DAY), DATE_ADD(DATE_ADD(@now, INTERVAL 2 DAY), INTERVAL 90 MINUTE), 'active'),
+  (@atlas_02_id, @dana_user_id, DATE_ADD(@now, INTERVAL 4 DAY), DATE_ADD(DATE_ADD(@now, INTERVAL 4 DAY), INTERVAL 2 HOUR), 'active'),
+  (@orion_03_id, @elena_user_id, DATE_SUB(@now, INTERVAL 1 DAY), DATE_ADD(DATE_SUB(@now, INTERVAL 1 DAY), INTERVAL 4 HOUR), 'forcequit'),
+  (@orion_03_id, @farid_user_id, DATE_ADD(@now, INTERVAL 3 DAY), DATE_ADD(DATE_ADD(@now, INTERVAL 3 DAY), INTERVAL 2 HOUR), 'active'),
+  (@orion_04_id, @grace_user_id, DATE_ADD(@now, INTERVAL 6 HOUR), DATE_ADD(@now, INTERVAL 8 HOUR), 'active'),
+  (@nova_05_id, @alice_user_id, DATE_ADD(@now, INTERVAL 5 DAY), DATE_ADD(DATE_ADD(@now, INTERVAL 5 DAY), INTERVAL 2 HOUR), 'active'),
+  (@nova_05_id, @bob_user_id, DATE_ADD(@now, INTERVAL 7 DAY), DATE_ADD(DATE_ADD(@now, INTERVAL 7 DAY), INTERVAL 90 MINUTE), 'crashed'),
+  (@nova_06_id, @admin_user_id, DATE_ADD(@now, INTERVAL 1 DAY), DATE_ADD(DATE_ADD(@now, INTERVAL 1 DAY), INTERVAL 1 HOUR), 'active');
 
 INSERT INTO logs (user_id, action, details, ip_address)
 VALUES
