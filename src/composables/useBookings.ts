@@ -161,6 +161,10 @@ export function useBookings() {
     }
   }
 
+  async function terminateBooking(id: number): Promise<boolean> {
+    return updateBooking(id, undefined, undefined, 'forcequit')
+  }
+
   async function deleteBooking(id: number): Promise<boolean> {
     loading.value = true
     error.value = null
@@ -185,6 +189,7 @@ export function useBookings() {
     checkAvailability,
     createBooking,
     updateBooking,
+    terminateBooking,
     deleteBooking,
   }
 }

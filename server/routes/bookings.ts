@@ -4,6 +4,26 @@ import type { Request, Response } from 'express'
 
 const router = Router()
 
+export async function reconcileRecentBookings() {
+  const [deletedResult] = await pool.execute(
+    `DELETE FROM bookings
+     WHERE from_time >= to_time`,
+  )
+
+  const [finishedResult] = await pool.execute(
+    `UPDATE bookings
+     SET status = 'finished'
+     WHERE status = 'active'
+       AND to_time < NOW()
+       AND from_time < to_time`,
+  )
+
+  return {
+    deletedInvalidBookings: (deletedResult as { affectedRows?: number }).affectedRows ?? 0,
+    finishedBookings: (finishedResult as { affectedRows?: number }).affectedRows ?? 0,
+  }
+}
+
 // Get all bookings
 router.get('/', async (_req: Request, res: Response) => {
   const [rows] = await pool.execute(`

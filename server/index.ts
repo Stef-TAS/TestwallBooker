@@ -6,7 +6,7 @@ import logsRouter from './routes/logs'
 import historyRouter from './routes/history'
 import accountsRouter from './routes/accounts'
 import testwallsRouter from './routes/testwalls'
-import bookingsRouter from './routes/bookings'
+import bookingsRouter, { reconcileRecentBookings } from './routes/bookings'
 import accessRightsRouter from './routes/access-rights'
 import authRouter from './routes/auth'
 
@@ -25,7 +25,10 @@ app.use('/api/bookings', bookingsRouter)
 app.use('/api/access-rights', accessRightsRouter)
 
 initDb()
-  .then(() => {
+  .then(async () => {
+    const bookingCleanup = await reconcileRecentBookings()
+    console.log('Booking startup cleanup complete:', bookingCleanup)
+
     app.listen(PORT, () => {
       console.log(`Server running on http://localhost:${PORT}`)
     })
