@@ -164,7 +164,7 @@ function handleLogout() {
 
   <div>
     <div class="grid grid-cols-2">
-      <Fieldset legend="Account information" class="max-w-4/5 w-full h-min">
+      <Fieldset legend="Account information" class="max-w-4/5 w-full h-min shadow-lg">
         <div class="flex flex-col text-sm p-2">
           <div class="flex justify-between">
             <span class="text-color">Username</span>
@@ -206,7 +206,7 @@ function handleLogout() {
           </div>
         </div>
       </Fieldset>
-      <Fieldset legend="Settings" class="max-w-4/5 w-full h-min">
+      <Fieldset legend="Settings" class="max-w-4/5 w-full h-min shadow-lg">
         <div class="flex flex-col text-sm p-2">
           <div class="flex flex-col gap-3 items-start">
             <Message v-if="pictureSuccess" severity="success" text="Profile picture updated!" />
@@ -239,7 +239,7 @@ function handleLogout() {
           label="Logout"
           severity="danger"
           icon="pi pi-sign-out"
-          class="w-full mt-2"
+          class="w-full mt-2 hover:shadow-red-700 hover:shadow-md"
           @click="handleLogout"
         />
       </Fieldset>
@@ -247,7 +247,7 @@ function handleLogout() {
 
     <!-- Admin Section: Add New User -->
     <div v-if="accountStore.account?.isAdmin && accountStore.showAdminContent" class="mt-6">
-      <Fieldset legend="Admin: Add New User" class="w-full">
+      <Fieldset legend="Admin: Add New User" class="w-full shadow-lg">
         <div class="flex flex-col gap-4 p-2">
           <Message v-if="formSuccess" severity="success" text="User created successfully!" />
           <Message v-if="formError" severity="error" :text="formError" />

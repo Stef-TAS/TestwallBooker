@@ -29,7 +29,7 @@ import { useBookings, type Booking as ApiBooking } from '@/composables/useBookin
 const accountStore = useAccountStore()
 
 const testwallsStore = useTestwallsStore()
-const { testwalls } = storeToRefs(testwallsStore)
+const { testwallsWithAvailability } = storeToRefs(testwallsStore)
 const { loadTestwalls } = testwallsStore
 
 type BookingHistory = {
@@ -220,18 +220,21 @@ const bookingend = ref(new Date(Date.now()))
           <Card>
             <template #content>
               <div>
-                <CommandMenu :model="testwalls" placeholder="Search for Testwalls...">
+                <CommandMenu
+                  :model="testwallsWithAvailability"
+                  placeholder="Search for Testwalls..."
+                >
                   <template #item="{ item }">
                     <div class="flex items-center gap-3.5 py-1 px-2.5 w-full">
                       <RadioButton
                         v-model="selectedRadioButton"
                         ,
-                        :input-id="item.testwallId"
+                        :input-id="item.id"
                         name="testwall"
-                        :value="item.testwallId"
+                        :value="item.id"
                         :disabled="item.isAvailable == false"
                       />
-                      <span class="text-sm">{{ item.testwallName }}</span>
+                      <span class="text-sm">{{ item.name }}</span>
                       <Tag v-if="item.isAvailable == true" severity="success">Available</Tag>
                       <Tag v-if="item.isAvailable == false" severity="danger">Unavailable</Tag>
                     </div>

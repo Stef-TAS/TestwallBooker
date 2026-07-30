@@ -94,7 +94,7 @@ const groupedCommands = computed(() => {
 })
 
 const testwallsStore = useTestwallsStore()
-const { testwalls } = storeToRefs(testwallsStore)
+const { testwallsWithAvailability } = storeToRefs(testwallsStore)
 const { loadTestwalls } = testwallsStore
 
 onMounted(() => {
@@ -134,15 +134,15 @@ const visible = ref(false)
   <div v-if="accountStore.showAdminContent" class="mb-4">
     <p>Admin Terminal Select</p>
     <Select
-      :options="testwalls"
+      :options="testwallsWithAvailability"
       placeholder="Select a Testwall"
-      optionLabel="testwallName"
+      optionLabel="name"
       filter
-      filterBy="testwallName"
+      filterBy="name"
     >
       <template #option="slotProps">
         <div class="flex gap-4 justify-between">
-          <span>{{ slotProps.option.testwallName }} </span>
+          <span>{{ slotProps.option.name }} </span>
           <Tag v-if="slotProps.option.isAvailable == true" severity="success">Available</Tag>
           <Tag v-if="slotProps.option.isAvailable == false" severity="danger">Unavailable</Tag>
         </div>
