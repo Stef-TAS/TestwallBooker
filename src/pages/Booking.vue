@@ -38,9 +38,37 @@ const selectedTestwallBookings = computed(() => {
   return testwallBookings.value.filter((b) => b.testwall_id === selectedRadioButton.value)
 })
 
-function formatTime(date: Date): string {
-  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
+function formatTime(isoString: string): string {
+  const d = new Date(isoString)
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }
+
+function getBookingsForDate(date: Date | null) {
+  if (!date) return []
+  const dayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0)
+  const dayEnd = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999)
+  return selectedTestwallBookings.value.filter((b) => {
+    const from = new Date(b.from_time)
+    const to = new Date(b.to_time)
+    return from <= dayEnd && to >= dayStart
+  })
+}
+
+const startDateBookings = computed(() => getBookingsForDate(bookingstart.value))
+const endDateBookings = computed(() => getBookingsForDate(bookingend.value))
+
+const conflictingBookings = computed(() => {
+  const start = bookingstart.value
+  const end = bookingend.value
+  if (!start || !end || start >= end) return []
+  return selectedTestwallBookings.value.filter((b) => {
+    const from = new Date(b.from_time)
+    const to = new Date(b.to_time)
+    return start < to && end > from
+  })
+})
+
+const hasBookingConflict = computed(() => conflictingBookings.value.length > 0)
 
 function getUnavailableSpansForDay(
   day: number,
@@ -49,7 +77,9 @@ function getUnavailableSpansForDay(
 ): { from: string; to: string }[] {
   const dayStart = new Date(year, month, day, 0, 0, 0)
   const dayEnd = new Date(year, month, day, 23, 59, 59, 999)
-  return selectedTestwallBookings.value
+
+  // Collect intervals as minute offsets within the day
+  const intervals = selectedTestwallBookings.value
     .filter((b) => {
       const from = new Date(b.from_time)
       const to = new Date(b.to_time)
@@ -58,11 +88,28 @@ function getUnavailableSpansForDay(
     .map((b) => {
       const from = new Date(b.from_time)
       const to = new Date(b.to_time)
-      return {
-        from: from < dayStart ? '00:00' : formatTime(from),
-        to: to > dayEnd ? '24:00' : formatTime(to),
-      }
+      const startMin = from < dayStart ? 0 : from.getHours() * 60 + from.getMinutes()
+      const endMin = to > dayEnd ? 24 * 60 : to.getHours() * 60 + to.getMinutes()
+      return { start: startMin, end: endMin }
     })
+    .sort((a, b) => a.start - b.start)
+
+  // Merge overlapping/adjacent intervals
+  const merged: { start: number; end: number }[] = []
+  for (const interval of intervals) {
+    const last = merged.at(-1)
+    if (last && interval.start <= last.end) {
+      last.end = Math.max(last.end, interval.end)
+    } else {
+      merged.push({ ...interval })
+    }
+  }
+
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return merged.map(({ start, end }) => ({
+    from: `${pad(Math.floor(start / 60))}:${pad(start % 60)}`,
+    to: end === 24 * 60 ? '24:00' : `${pad(Math.floor(end / 60))}:${pad(end % 60)}`,
+  }))
 }
 
 type BookingHistory = {
@@ -301,7 +348,6 @@ const bookingend = ref(new Date(Date.now()))
                             :input-id="item.id"
                             name="testwall"
                             :value="item.id"
-                            :disabled="item.isAvailable == false"
                           />
                           <span class="text-sm">{{ item.name }}</span>
                           <Tag v-if="item.isAvailable == true" severity="success">Available</Tag>
@@ -367,18 +413,32 @@ const bookingend = ref(new Date(Date.now()))
                         :min-date="new Date(Date.now())"
                       >
                         <template #date="{ date }">
-                          <div class="flex flex-col items-center gap-0.5">
-                            <span>{{ date.day }}</span>
-                            <span
-                              v-for="span in getUnavailableSpansForDay(
-                                date.day,
-                                date.month,
-                                date.year,
-                              )"
-                              :key="span.from"
-                              class="text-[8px] leading-tight text-red-400 whitespace-nowrap px-0.5 rounded bg-red-500/10"
-                              >{{ span.from }}-{{ span.to }}</span
-                            >
+                          <span
+                            :class="{
+                              'text-orange-400 font-semibold':
+                                getUnavailableSpansForDay(date.day, date.month, date.year).length >
+                                0,
+                            }"
+                            >{{ date.day }}</span
+                          >
+                        </template>
+                        <template #footer>
+                          <div v-if="startDateBookings.length > 0" class="px-3 pb-3 pt-1">
+                            <p class="text-xs font-medium text-orange-400 mb-1">
+                              Bookings on this day:
+                            </p>
+                            <ul class="flex flex-col gap-1">
+                              <li
+                                v-for="b in startDateBookings"
+                                :key="b.id"
+                                class="flex justify-between rounded px-2 py-1 bg-orange-500/10 text-xs"
+                              >
+                                <span
+                                  >{{ formatTime(b.from_time) }} – {{ formatTime(b.to_time) }}</span
+                                >
+                                <span v-if="b.username" class="opacity-60">{{ b.username }}</span>
+                              </li>
+                            </ul>
                           </div>
                         </template>
                       </DatePicker>
@@ -395,29 +455,57 @@ const bookingend = ref(new Date(Date.now()))
                         :min-date="bookingstart"
                       >
                         <template #date="{ date }">
-                          <div class="flex flex-col items-center gap-0.5">
-                            <span>{{ date.day }}</span>
-                            <span
-                              v-for="span in getUnavailableSpansForDay(
-                                date.day,
-                                date.month,
-                                date.year,
-                              )"
-                              :key="span.from"
-                              class="text-[8px] leading-tight text-red-400 whitespace-nowrap px-0.5 rounded bg-red-500/10"
-                              >{{ span.from }}-{{ span.to }}</span
-                            >
+                          <span
+                            :class="{
+                              'text-orange-400 font-semibold':
+                                getUnavailableSpansForDay(date.day, date.month, date.year).length >
+                                0,
+                            }"
+                            >{{ date.day }}</span
+                          >
+                        </template>
+                        <template #footer>
+                          <div v-if="endDateBookings.length > 0" class="px-3 pb-3 pt-1">
+                            <p class="text-xs font-medium text-orange-400 mb-1">
+                              Bookings on this day:
+                            </p>
+                            <ul class="flex flex-col gap-1">
+                              <li
+                                v-for="b in endDateBookings"
+                                :key="b.id"
+                                class="flex justify-between rounded px-2 py-1 bg-orange-500/10 text-xs"
+                              >
+                                <span
+                                  >{{ formatTime(b.from_time) }} – {{ formatTime(b.to_time) }}</span
+                                >
+                                <span v-if="b.username" class="opacity-60">{{ b.username }}</span>
+                              </li>
+                            </ul>
                           </div>
                         </template>
                       </DatePicker>
                     </div>
+                  </div>
+                  <div
+                    v-if="hasBookingConflict"
+                    class="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-400"
+                  >
+                    <p class="font-medium mb-1">
+                      Selected timeframe conflicts with existing bookings:
+                    </p>
+                    <ul class="flex flex-col gap-0.5">
+                      <li v-for="b in conflictingBookings" :key="b.id" class="flex gap-2 text-xs">
+                        <span>{{ formatTime(b.from_time) }} – {{ formatTime(b.to_time) }}</span>
+                        <span v-if="b.username" class="opacity-60">{{ b.username }}</span>
+                      </li>
+                    </ul>
                   </div>
                   <div class="flex pt-5 justify-between">
                     <Button severity="secondary" @click="activateCallback('2')">
                       <ArrowLeft />
                       Back
                     </Button>
-                    <Button @click="activateCallback('4')">
+                    <Button @click="activateCallback('4')" :disabled="hasBookingConflict">
                       Next
                       <ArrowRight />
                     </Button>
@@ -510,7 +598,7 @@ const bookingend = ref(new Date(Date.now()))
         stripedRows
         removableSort
         paginator
-        :rows="10"
+        :rows="5"
         :rowsPerPageOptions="[5, 10, 50, 100, 150]"
       >
         <Column field="id" header="BookingId" sortable />
