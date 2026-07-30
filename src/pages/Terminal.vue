@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { Button, CommandMenu, Dialog, Select, Tag } from 'primevue'
+import { Button, Card, CommandMenu, Dialog, Select, Tag } from 'primevue'
 import Terminal from 'primevue/terminal'
 import TerminalService from 'primevue/terminalservice'
 
@@ -112,16 +112,28 @@ const visible = ref(false)
 </script>
 <template>
   <Toast />
-  <div class="mb-4">
-    <p class="text-2xl">Terminal</p>
-    <p class="text-sm">
-      Here you can use predefined Commands to run on the testwalls (see list bellow)
-    </p>
-  </div>
-  <div class="mb-4">
+  <Card class="relative overflow-hidden border border-blue-500/20 shadow-xl mb-6">
+    <template #content>
+      <div class="absolute -top-24 -right-16 h-48 w-48 rounded-full bg-blue-500/15 blur-2xl" />
+      <div class="absolute -bottom-28 -left-16 h-56 w-56 rounded-full bg-cyan-500/15 blur-2xl" />
+
+      <div class="relative z-10">
+        <div class="flex flex-wrap items-center gap-2 mb-3">
+          <Tag severity="info" value="Pseudo Terminal" />
+          <Tag severity="warn" value="Command Palette: Ctrl/Cmd + L" />
+        </div>
+
+        <h1 class="text-3xl font-semibold tracking-tight">Terminal</h1>
+        <p class="mt-3 text-sm leading-6 opacity-80 max-w-3xl">
+          Run predefined commands for your testwall workflow and use the built-in command list for
+          faster, more consistent execution.
+        </p>
+      </div>
+    </template>
+  </Card>
+  <div v-if="accountStore.showAdminContent" class="mb-4">
     <p>Admin Terminal Select</p>
     <Select
-      v-if="accountStore.showAdminContent"
       :options="testwalls"
       placeholder="Select a Testwall"
       optionLabel="testwallName"

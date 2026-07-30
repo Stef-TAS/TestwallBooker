@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { useAccountStore } from '@/stores/account'
 import { useAccounts } from '@/composables/useAccounts'
-import { Divider, ToggleSwitch, Button, InputText, Message, Tag } from 'primevue'
+import { Card, Divider, ToggleSwitch, Button, InputText, Message, Tag } from 'primevue'
 import Fieldset from 'primevue/fieldset'
 import Select from 'primevue/select'
 import { computed, onMounted, ref, watch } from 'vue'
@@ -136,12 +136,31 @@ function fileToDataUrl(file: File): Promise<string> {
     reader.readAsDataURL(file)
   })
 }
+
+function handleLogout() {
+  accountStore.logout()
+}
 </script>
 <template>
-  <div class="mb-4">
-    <p class="text-2xl">Account</p>
-    <p class="text-sm">See all the information about you and your settings.</p>
-  </div>
+  <Card class="relative overflow-hidden border border-blue-500/20 shadow-xl mb-6">
+    <template #content>
+      <div class="absolute -top-24 -right-16 h-48 w-48 rounded-full bg-blue-500/15 blur-2xl" />
+      <div class="absolute -bottom-28 -left-16 h-56 w-56 rounded-full bg-cyan-500/15 blur-2xl" />
+
+      <div class="relative z-10">
+        <div class="flex flex-wrap items-center gap-2 mb-3">
+          <Tag severity="info" value="Profile" />
+          <Tag severity="success" value="Preferences and Access" />
+        </div>
+
+        <h1 class="text-3xl font-semibold tracking-tight">Account</h1>
+        <p class="mt-3 text-sm leading-6 opacity-80 max-w-3xl">
+          Manage your personal information, profile picture, local UI preferences, and account-level
+          controls from one central page.
+        </p>
+      </div>
+    </template>
+  </Card>
 
   <div>
     <div class="grid grid-cols-2">
@@ -208,13 +227,21 @@ function fileToDataUrl(file: File): Promise<string> {
         </div>
         <Divider />
         <div class="flex justify-between mb-1">
-          <span class="text-color">Darkmode</span>
+          <label for="DarkmodeSwitch" class="text-color">Darkmode</label>
           <ToggleSwitch v-model="DarkMode" inputId="DarkmodeSwitch" />
         </div>
         <div v-if="accountStore.account?.isAdmin" class="flex justify-between">
           <span class="text-color">Admin-Content</span>
           <ToggleSwitch v-model="accountStore.showAdminContent" inputId="AdminContentSwitch" />
         </div>
+        <Divider />
+        <Button
+          label="Logout"
+          severity="danger"
+          icon="pi pi-sign-out"
+          class="w-full mt-2"
+          @click="handleLogout"
+        />
       </Fieldset>
     </div>
 

@@ -33,6 +33,8 @@ import Info from '@primeicons/vue/info-circle'
 import Bookmark from '@primeicons/vue/bookmark'
 import Eye from '@primeicons/vue/eye'
 import EyeSlash from '@primeicons/vue/eye-slash'
+import Question from '@primeicons/vue/question-circle'
+import Map from '@primeicons/vue/map'
 import { Card, Divider, FloatLabel, InputPassword, InputText, InputIcon, Button } from 'primevue'
 import { useAccountStore } from './stores/account'
 import { storeToRefs } from 'pinia'
@@ -55,6 +57,9 @@ const sidebarOpen = ref(true)
 const canAccessTerminal = ref(true)
 const TerminalToolTip =
   '<div class="font-semibold text-sm">Missing Access</div><div class="opacity-75 text-sm mt-1">You currently have no active Bookings. Please book a Terminal before accessing the Terminal.</div>'
+
+const NoTestWallAccessToolTip =
+  '<div class="font-semibold text-sm">Missing Access</div><div class="opacity-75 text-sm mt-1">You currently have no access to the Testwall, meaning you can only see the Status of the Testwalls. If this is incorrect, contact an Admin or your supervisor.</div>'
 </script>
 
 <template>
@@ -81,6 +86,29 @@ const TerminalToolTip =
             </SidebarHeader>
             <SidebarContent>
               <SidebarGroup>
+                <SidebarGroupLabel>General Info</SidebarGroupLabel>
+                <SidebarMenu>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton @click="$router.push('/about')">
+                      <Question />
+                      <span>About</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton @click="$router.push('/tutorial')">
+                      <Map />
+                      <span>Tutorial</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem v-if="accountStore.account?.isAdmin">
+                    <SidebarMenuButton @click="$router.push('/admin-guide')">
+                      <User />
+                      <span>Admin Guide</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </SidebarMenu>
+              </SidebarGroup>
+              <SidebarGroup>
                 <SidebarGroupLabel>Actions</SidebarGroupLabel>
                 <SidebarGroupContent>
                   <SidebarMenu>
@@ -91,16 +119,27 @@ const TerminalToolTip =
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                     <SidebarMenuItem>
-                      <SidebarMenuButton @click="$router.push('/booking')">
-                        <Bookmark />
-                        <span>Booking</span>
-                      </SidebarMenuButton>
+                      <div class="flex items-center gap-2 w-full">
+                        <SidebarMenuButton
+                          @click="$router.push('/booking')"
+                          :disabled="accountStore.account?.canTestwall == false"
+                        >
+                          <Bookmark />
+                          <span>Booking</span>
+                        </SidebarMenuButton>
+                        <Info
+                          v-if="accountStore.account?.canTestwall == false"
+                          v-tooltip.top="{ value: NoTestWallAccessToolTip, escape: false }"
+                        />
+                      </div>
                     </SidebarMenuItem>
                     <SidebarMenuItem>
                       <div class="flex items-center gap-2 w-full">
                         <SidebarMenuButton
                           @click="$router.push('/terminal')"
-                          :disabled="canAccessTerminal == false"
+                          :disabled="
+                            canAccessTerminal == false || accountStore.account?.canTestwall == false
+                          "
                           class="flex-1"
                         >
                           <Code />
@@ -109,6 +148,10 @@ const TerminalToolTip =
                         <Info
                           v-if="canAccessTerminal == false"
                           v-tooltip.top="{ value: TerminalToolTip, escape: false }"
+                        />
+                        <Info
+                          v-if="accountStore.account?.canTestwall == false"
+                          v-tooltip.top="{ value: NoTestWallAccessToolTip, escape: false }"
                         />
                       </div>
                     </SidebarMenuItem>

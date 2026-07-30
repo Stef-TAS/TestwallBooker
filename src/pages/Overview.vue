@@ -2,7 +2,7 @@
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import { onMounted } from 'vue'
-import { Button, Tag } from 'primevue'
+import { Button, Card, Tag } from 'primevue'
 import { storeToRefs } from 'pinia'
 import { useTestwallsStore } from '@/stores/testwalls'
 import { useAccountStore } from '@/stores/account'
@@ -18,10 +18,25 @@ onMounted(() => {
 })
 </script>
 <template>
-  <div class="mb-4">
-    <p class="text-2xl">overview</p>
-    <p class="text-sm">This is a (somewhat) live view of all currently accessible Testwalls</p>
-  </div>
+  <Card class="relative overflow-hidden border border-blue-500/20 shadow-xl mb-6">
+    <template #content>
+      <div class="absolute -top-24 -right-16 h-48 w-48 rounded-full bg-blue-500/15 blur-2xl" />
+      <div class="absolute -bottom-28 -left-16 h-56 w-56 rounded-full bg-cyan-500/15 blur-2xl" />
+
+      <div class="relative z-10">
+        <div class="flex flex-wrap items-center gap-2 mb-3">
+          <Tag severity="info" value="Live Status" />
+          <Tag severity="success" value="Availability Overview" />
+        </div>
+
+        <h1 class="text-3xl font-semibold tracking-tight">Overview</h1>
+        <p class="mt-3 text-sm leading-6 opacity-80 max-w-3xl">
+          This is a (somewhat) live view of all currently accessible Testwalls, including current
+          availability and active occupancy.
+        </p>
+      </div>
+    </template>
+  </Card>
   <div>
     <p v-if="isLoading">Loading data...</p>
     <p v-else-if="loadError">Failed to load data: {{ loadError }}</p>

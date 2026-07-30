@@ -91,10 +91,25 @@ const bookingstart = ref(new Date(Date.now()))
 const bookingend = ref(new Date(Date.now()))
 </script>
 <template>
-  <div class="mb-4">
-    <p class="text-2xl">Booking</p>
-    <p class="text-sm">See all the information about you and your settings.</p>
-  </div>
+  <Card class="relative overflow-hidden border border-blue-500/20 shadow-xl mb-6">
+    <template #content>
+      <div class="absolute -top-24 -right-16 h-48 w-48 rounded-full bg-blue-500/15 blur-2xl" />
+      <div class="absolute -bottom-28 -left-16 h-56 w-56 rounded-full bg-cyan-500/15 blur-2xl" />
+
+      <div class="relative z-10">
+        <div class="flex flex-wrap items-center gap-2 mb-3">
+          <Tag severity="info" value="Booking Flow" />
+          <Tag severity="success" value="Reserve Testwalls" />
+        </div>
+
+        <h1 class="text-3xl font-semibold tracking-tight">Booking</h1>
+        <p class="mt-3 text-sm leading-6 opacity-80 max-w-3xl">
+          Reserve a testwall by selecting a valid timeframe and available wall, then review your
+          booking history and status updates in one place.
+        </p>
+      </div>
+    </template>
+  </Card>
 
   <div>
     <Stepper value="1" linear>

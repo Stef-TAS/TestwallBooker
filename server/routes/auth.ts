@@ -57,13 +57,18 @@ router.post('/login', async (req: Request, res: Response) => {
 
     // Get user's access rights
     const [accessRights] = await pool.execute(
-      `SELECT ar.role_name FROM access_rights ar
+      `SELECT ar.id, ar.role_name FROM access_rights ar
        INNER JOIN user_access_rights uar ON ar.id = uar.access_right_id
        WHERE uar.user_id = ?`,
       [user.id],
     )
 
-    const roles = (accessRights as any[]).map((row) => row.role_name)
+    const roles = (accessRights as any[]).map((row) => String(row.role_name).toLowerCase())
+    const roleIds = new Set((accessRights as any[]).map((row) => Number(row.id)))
+
+    const hasOperatorRole = roles.includes('operator')
+    const isUserOnly =
+      (accessRights as any[]).length === 1 && (roles.includes('user') || roleIds.has(2))
 
     // Build account object
     const account = {
@@ -75,8 +80,8 @@ router.post('/login', async (req: Request, res: Response) => {
       location: user.location,
       timezone: user.timezone,
       profilePicture: normalizeProfilePicture(user.profile_picture),
-      isAdmin: roles.includes('admin'),
-      canTestwall: roles.includes('operator'),
+      isAdmin: roles.includes('admin') || roleIds.has(1),
+      canTestwall: hasOperatorRole && !isUserOnly,
     }
 
     res.json({ success: true, account })

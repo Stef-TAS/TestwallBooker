@@ -1,8 +1,11 @@
+import About from '@/pages/About.vue'
+import AdminGuide from '@/pages/AdminGuide.vue'
 import Account from '@/pages/Account.vue'
 import Booking from '@/pages/Booking.vue'
 import Overview from '@/pages/Overview.vue'
 import Query from '@/pages/Query.vue'
 import Terminal from '@/pages/Terminal.vue'
+import Tutorial from '@/pages/Tutorial.vue'
 import { createRouter, createWebHistory } from 'vue-router'
 
 const router = createRouter({
@@ -14,6 +17,9 @@ const router = createRouter({
     { path: '/query', component: Query },
     { path: '/account', component: Account },
     { path: '/booking', component: Booking },
+    { path: '/about', component: About },
+    { path: '/admin-guide', component: AdminGuide },
+    { path: '/tutorial', component: Tutorial },
   ],
 })
 

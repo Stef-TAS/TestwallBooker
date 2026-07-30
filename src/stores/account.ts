@@ -104,6 +104,7 @@ export const useAccountStore = defineStore('account', () => {
     account.value = undefined
     loggedIn.value = false
     loginError.value = null
+    showAdminContent.value = false
     deleteCookie('account')
   }
 
