@@ -3,6 +3,7 @@ import cors from 'cors'
 import 'dotenv/config'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { spawn, type ChildProcess } from 'node:child_process'
 import { initDb } from './db'
 import logsRouter from './routes/logs'
 import historyRouter from './routes/history'
@@ -59,6 +60,36 @@ initDb()
     app.listen(PORT, () => {
       console.log(`Server running on http://localhost:${PORT}`)
     })
+
+    const PYTHON_SCRIPT = process.env.PYTHON_SCRIPT
+    let pythonProcess: ChildProcess | null = null
+
+    if (PYTHON_SCRIPT) {
+      const pythonCmd = process.env.PYTHON_CMD ?? 'python3'
+      pythonProcess = spawn(pythonCmd, [PYTHON_SCRIPT], { stdio: 'inherit' })
+      console.log(
+        `Python process started: ${pythonCmd} ${PYTHON_SCRIPT} (pid ${pythonProcess.pid})`,
+      )
+
+      pythonProcess.on('error', (err) => {
+        console.error('Failed to start Python process:', err)
+      })
+
+      pythonProcess.on('exit', (code, signal) => {
+        console.warn(`Python process exited (code=${code}, signal=${signal})`)
+      })
+    }
+
+    function shutdown() {
+      if (pythonProcess && !pythonProcess.killed) {
+        console.log('Stopping Python process...')
+        pythonProcess.kill()
+      }
+      process.exit(0)
+    }
+
+    process.on('SIGINT', shutdown)
+    process.on('SIGTERM', shutdown)
   })
   .catch((err) => {
     console.error('Failed to initialize database:', err)

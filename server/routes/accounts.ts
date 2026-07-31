@@ -127,7 +127,7 @@ router.post('/register', async (req: Request, res: Response) => {
 router.put('/:id', async (req: Request, res: Response) => {
   const { id } = req.params
   const updates: string[] = []
-  const values: unknown[] = []
+  const values: (string | number | Buffer | null)[] = []
 
   if (Object.prototype.hasOwnProperty.call(req.body, 'first_name')) {
     updates.push('first_name = ?')
@@ -160,12 +160,11 @@ router.put('/:id', async (req: Request, res: Response) => {
     return
   }
 
-  values.push(id)
+  values.push(id as string)
   await pool.execute(`UPDATE accounts SET ${updates.join(', ')} WHERE id = ?`, values)
   res.json({ success: true })
 })
 
-// Delete account
 router.delete('/:id', async (req: Request, res: Response) => {
   const { id } = req.params
   await pool.execute('DELETE FROM accounts WHERE id = ?', [id])

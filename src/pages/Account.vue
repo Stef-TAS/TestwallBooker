@@ -381,7 +381,7 @@ function handleLogout() {
           <ToggleSwitch v-model="DarkMode" inputId="DarkmodeSwitch" />
         </div>
         <div v-if="accountStore.account?.isAdmin" class="flex justify-between">
-          <span class="text-color">Admin-Content</span>
+          <label for="AdminContentSwitch" class="text-color">Admin Content</label>
           <ToggleSwitch v-model="accountStore.showAdminContent" inputId="AdminContentSwitch" />
         </div>
         <Divider />

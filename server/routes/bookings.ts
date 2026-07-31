@@ -122,7 +122,7 @@ router.put('/:id', async (req: Request, res: Response) => {
   const { from_time, to_time, status } = req.body
 
   const updates: string[] = []
-  const values: unknown[] = []
+  const values: (string | number | Buffer | null)[] = []
 
   if (from_time !== undefined) {
     updates.push('from_time = ?')
@@ -144,12 +144,11 @@ router.put('/:id', async (req: Request, res: Response) => {
     return
   }
 
-  values.push(id)
+  values.push(id as string)
   await pool.execute(`UPDATE bookings SET ${updates.join(', ')} WHERE id = ?`, values)
   res.json({ success: true })
 })
 
-// Delete booking
 router.delete('/:id', async (req: Request, res: Response) => {
   const { id } = req.params
   await pool.execute('DELETE FROM bookings WHERE id = ?', [id])
