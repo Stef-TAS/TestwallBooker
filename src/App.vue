@@ -111,6 +111,19 @@ const NoTestWallAccessToolTip =
                       <span>Admin Guide</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton @click="$router.push('/account')">
+                      <img
+                        :src="sidebarProfilePicture"
+                        alt="profile picture"
+                        class="h-7 w-7 rounded-full object-cover border border-surface-300"
+                      />
+                      <span>
+                        {{ accountStore.account?.firstName }}
+                        {{ accountStore.account?.lastName }}
+                      </span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
                 </SidebarMenu>
               </SidebarGroup>
               <SidebarGroup>
@@ -172,24 +185,6 @@ const NoTestWallAccessToolTip =
                 </SidebarGroupContent>
               </SidebarGroup>
             </SidebarContent>
-            <SidebarFooter>
-              <SidebarMenu>
-                <SidebarMenuItem>
-                  <Divider />
-                  <SidebarMenuButton @click="$router.push('/account')">
-                    <img
-                      :src="sidebarProfilePicture"
-                      alt="profile picture"
-                      class="h-7 w-7 rounded-full object-cover border border-surface-300"
-                    />
-                    <span>
-                      {{ accountStore.account?.firstName }}
-                      {{ accountStore.account?.lastName }}
-                    </span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              </SidebarMenu>
-            </SidebarFooter>
             <SidebarRail />
           </SidebarPanel>
         </SidebarAside>
