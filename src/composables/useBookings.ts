@@ -6,6 +6,7 @@ export type Booking = {
   testwall_name?: string
   user_id: number
   username?: string
+  user_profile_picture?: string | null
   user_email?: string
   from_time: string
   to_time: string

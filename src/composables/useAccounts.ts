@@ -124,7 +124,16 @@ export function useAccounts() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
-      if (!res.ok) throw new Error('Failed to update account')
+      if (!res.ok) {
+        let message = 'Failed to update account'
+        try {
+          const data = await res.json()
+          message = data.error || message
+        } catch {
+          // Ignore JSON parse failures and keep fallback message.
+        }
+        throw new Error(message)
+      }
       return true
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Unknown error'

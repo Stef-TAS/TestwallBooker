@@ -34,6 +34,38 @@ function mapAccount(row: any) {
   }
 }
 
+// Get profile pictures for a set of account ids.
+router.get('/profile-pictures', async (req: Request, res: Response) => {
+  const idsParam = String(req.query.ids ?? '').trim()
+  if (!idsParam) {
+    res.json({})
+    return
+  }
+
+  const ids = idsParam
+    .split(',')
+    .map((value) => Number(value.trim()))
+    .filter((value) => Number.isInteger(value) && value > 0)
+
+  if (ids.length === 0) {
+    res.json({})
+    return
+  }
+
+  const placeholders = ids.map(() => '?').join(',')
+  const [rows] = await pool.execute(
+    `SELECT id, profile_picture FROM accounts WHERE id IN (${placeholders})`,
+    ids,
+  )
+
+  const result: Record<number, string | null> = {}
+  for (const row of rows as any[]) {
+    result[row.id] = normalizeProfilePicture(row.profile_picture)
+  }
+
+  res.json(result)
+})
+
 // Get all accounts (admin only)
 router.get('/', async (_req: Request, res: Response) => {
   const [rows] = await pool.execute(

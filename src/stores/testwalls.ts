@@ -12,6 +12,18 @@ export type TestwallWithAvailability = Testwall & {
   isAvailable: boolean
   availabilityStatus: 'available' | 'unavailable' | 'out_of_service'
   currentUser?: string
+  currentUserId?: number | null
+  currentUserProfilePicture?: string | null
+}
+
+type OverviewRow = {
+  id: number
+  name: string
+  ip_address: string
+  created_at?: string
+  current_user_id: number | null
+  current_user: string | null
+  availability_status: 'available' | 'unavailable' | 'out_of_service'
 }
 
 export type Booking = {
@@ -30,6 +42,11 @@ export const useTestwallsStore = defineStore('testwalls', () => {
   const isLoading = ref(false)
   const loadError = ref('')
   const hasLoaded = ref(false)
+  const isOverviewLoading = ref(false)
+  const overviewLoadError = ref('')
+  const hasOverviewLoaded = ref(false)
+  const isOverviewProfilePicturesLoading = ref(false)
+  const overviewRows = ref<TestwallWithAvailability[]>([])
 
   // Computed property for testwalls with availability
   const testwallsWithAvailability = computed((): TestwallWithAvailability[] => {
@@ -59,6 +76,7 @@ export const useTestwallsStore = defineStore('testwalls', () => {
         isAvailable: availabilityStatus === 'available',
         availabilityStatus,
         currentUser: activeBooking?.username,
+        currentUserProfilePicture: null,
       }
     })
   })
@@ -99,13 +117,106 @@ export const useTestwallsStore = defineStore('testwalls', () => {
     }
   }
 
+  function normalizeOverviewRow(row: OverviewRow): TestwallWithAvailability {
+    const availabilityStatus = row.availability_status
+
+    return {
+      id: row.id,
+      name: row.name,
+      ip_address: row.ip_address,
+      created_at: row.created_at,
+      isAvailable: availabilityStatus === 'available',
+      availabilityStatus,
+      currentUser: row.current_user ?? undefined,
+      currentUserId: row.current_user_id,
+      currentUserProfilePicture: null,
+    }
+  }
+
+  async function loadOverview(force = false) {
+    if (isOverviewLoading.value) {
+      return
+    }
+
+    if (hasOverviewLoaded.value && !force) {
+      return
+    }
+
+    try {
+      isOverviewLoading.value = true
+      overviewLoadError.value = ''
+
+      const overviewRes = await fetch('/api/testwalls/overview')
+      if (!overviewRes.ok) {
+        throw new Error(`Failed to fetch overview: ${overviewRes.status}`)
+      }
+
+      const rows = (await overviewRes.json()) as OverviewRow[]
+      overviewRows.value = rows.map(normalizeOverviewRow)
+      hasOverviewLoaded.value = true
+
+      void loadOverviewProfilePictures()
+    } catch (error) {
+      overviewLoadError.value = error instanceof Error ? error.message : 'Unknown error'
+    } finally {
+      isOverviewLoading.value = false
+    }
+  }
+
+  async function loadOverviewProfilePictures() {
+    const userIds = Array.from(
+      new Set(
+        overviewRows.value
+          .map((row) => row.currentUserId)
+          .filter((id): id is number => typeof id === 'number' && id > 0),
+      ),
+    )
+
+    if (userIds.length === 0) {
+      isOverviewProfilePicturesLoading.value = false
+      return
+    }
+
+    try {
+      isOverviewProfilePicturesLoading.value = true
+
+      const response = await fetch(`/api/accounts/profile-pictures?ids=${userIds.join(',')}`)
+      if (!response.ok) {
+        throw new Error(`Failed to fetch profile pictures: ${response.status}`)
+      }
+
+      const pictureByUserId = (await response.json()) as Record<string, string | null>
+      overviewRows.value = overviewRows.value.map((row) => {
+        if (!row.currentUserId) {
+          return row
+        }
+
+        const profilePicture = pictureByUserId[String(row.currentUserId)] ?? null
+        return {
+          ...row,
+          currentUserProfilePicture: profilePicture,
+        }
+      })
+    } catch {
+      // Keep overview visible even if avatar hydration fails.
+    } finally {
+      isOverviewProfilePicturesLoading.value = false
+    }
+  }
+
   return {
     testwalls,
     bookings,
     testwallsWithAvailability,
+    overviewRows,
     isLoading,
     loadError,
     hasLoaded,
+    isOverviewLoading,
+    overviewLoadError,
+    hasOverviewLoaded,
+    isOverviewProfilePicturesLoading,
     loadTestwalls,
+    loadOverview,
   }
 })

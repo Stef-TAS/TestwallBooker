@@ -4,3 +4,9 @@ body {
   margin: 0;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
+
+.p-fieldset .p-fieldset-legend {
+  border: 1px solid var(--p-surface-300);
+  border-radius: 10px;
+  @apply shadow;
+}

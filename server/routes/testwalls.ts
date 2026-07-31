@@ -4,6 +4,45 @@ import type { Request, Response } from 'express'
 
 const router = Router()
 
+// Fast overview payload: current availability and current user name only.
+router.get('/overview', async (_req: Request, res: Response) => {
+  const [rows] = await pool.execute(`
+    SELECT
+      t.id,
+      t.name,
+      t.ip_address,
+      t.created_at,
+      a.id AS active_user_id,
+      a.username AS active_username,
+      CASE WHEN b.id IS NULL THEN 'available' ELSE 'unavailable' END AS availability_status
+    FROM testwalls t
+    LEFT JOIN bookings b ON b.id = (
+      SELECT b2.id
+      FROM bookings b2
+      WHERE b2.testwall_id = t.id
+        AND b2.from_time <= NOW()
+        AND NOW() < b2.to_time
+        AND COALESCE(b2.status, 'active') = 'active'
+      ORDER BY b2.from_time DESC
+      LIMIT 1
+    )
+    LEFT JOIN accounts a ON a.id = b.user_id
+    ORDER BY t.name
+  `)
+
+  const mapped = (rows as any[]).map((row) => ({
+    id: row.id,
+    name: row.name,
+    ip_address: row.ip_address,
+    created_at: row.created_at,
+    current_user_id: row.active_user_id ?? null,
+    current_user: row.active_username ?? null,
+    availability_status: row.availability_status,
+  }))
+
+  res.json(mapped)
+})
+
 // Get all testwalls
 router.get('/', async (_req: Request, res: Response) => {
   const [rows] = await pool.execute(

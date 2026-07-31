@@ -350,6 +350,7 @@ function handleLogout() {
               mode="basic"
               name="profilePicture"
               accept="image/*"
+              :maxFileSize="2000000"
               :chooseLabel="profilePictureChooseLabel"
               @select="handleProfilePictureChange"
             />

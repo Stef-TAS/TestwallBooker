@@ -2,19 +2,22 @@
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import { onMounted } from 'vue'
-import { Button, Card, Tag } from 'primevue'
+import { Button, Card, Skeleton, Tag } from 'primevue'
 import { storeToRefs } from 'pinia'
 import { useTestwallsStore } from '@/stores/testwalls'
 import { useAccountStore } from '@/stores/account'
 
+const defaultAvatarUrl = new URL('../data/avatar.png', import.meta.url).href
+
 const testwallsStore = useTestwallsStore()
-const { testwallsWithAvailability, isLoading, loadError } = storeToRefs(testwallsStore)
-const { loadTestwalls } = testwallsStore
+const { overviewRows, isOverviewLoading, overviewLoadError, isOverviewProfilePicturesLoading } =
+  storeToRefs(testwallsStore)
+const { loadOverview } = testwallsStore
 
 const accountStore = useAccountStore()
 
 onMounted(() => {
-  void loadTestwalls()
+  void loadOverview()
 })
 </script>
 <template>
@@ -38,10 +41,10 @@ onMounted(() => {
     </template>
   </Card>
   <div>
-    <p v-if="isLoading">Loading data...</p>
-    <p v-else-if="loadError">Failed to load data: {{ loadError }}</p>
+    <p v-if="isOverviewLoading">Loading data...</p>
+    <p v-else-if="overviewLoadError">Failed to load data: {{ overviewLoadError }}</p>
     <DataTable
-      :value="testwallsWithAvailability"
+      :value="overviewRows"
       removableSort
       paginator
       :rows="20"
@@ -62,7 +65,16 @@ onMounted(() => {
       </Column>
       <Column field="currentUser" header="Current User" sortable>
         <template #body="{ data }">
-          <span v-if="data.currentUser">{{ data.currentUser }}</span>
+          <div v-if="data.currentUser" class="flex items-center gap-2">
+            <Skeleton v-if="isOverviewProfilePicturesLoading" shape="circle" size="1.75rem" />
+            <img
+              v-else
+              :src="data.currentUserProfilePicture || defaultAvatarUrl"
+              :alt="`profile picture of ${data.currentUser}`"
+              class="h-7 w-7 rounded-full object-cover border border-surface-300"
+            />
+            <span>{{ data.currentUser }}</span>
+          </div>
           <span v-else class="text-muted-color">-</span>
         </template>
       </Column>

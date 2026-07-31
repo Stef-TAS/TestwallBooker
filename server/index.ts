@@ -12,9 +12,10 @@ import authRouter from './routes/auth'
 
 const app = express()
 const PORT = Number(process.env.SERVER_PORT ?? 3001)
+const JSON_BODY_LIMIT = process.env.JSON_BODY_LIMIT ?? '10mb'
 
 app.use(cors({ origin: process.env.CORS_ORIGIN ?? 'http://localhost:5173' }))
-app.use(express.json())
+app.use(express.json({ limit: JSON_BODY_LIMIT }))
 
 app.use('/api/logs', logsRouter)
 app.use('/api/history', historyRouter)
@@ -23,6 +24,15 @@ app.use('/api/accounts', accountsRouter)
 app.use('/api/testwalls', testwallsRouter)
 app.use('/api/bookings', bookingsRouter)
 app.use('/api/access-rights', accessRightsRouter)
+
+app.use((err: any, _req: express.Request, res: express.Response, next: express.NextFunction) => {
+  if (err?.type === 'entity.too.large') {
+    res.status(413).json({ error: 'Uploaded image is too large. Please choose a smaller file.' })
+    return
+  }
+
+  next(err)
+})
 
 initDb()
   .then(async () => {

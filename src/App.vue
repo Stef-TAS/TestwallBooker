@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import Sidebar from 'primevue/sidebar'
 import SidebarAside from 'primevue/sidebaraside'
 import SidebarContent from 'primevue/sidebarcontent'
@@ -40,6 +40,11 @@ import { useAccountStore } from './stores/account'
 import { storeToRefs } from 'pinia'
 
 const accountStore = useAccountStore()
+const defaultAvatarUrl = new URL('./data/avatar.png', import.meta.url).href
+
+const sidebarProfilePicture = computed(() => {
+  return accountStore.account?.profilePicture || defaultAvatarUrl
+})
 
 const AccountEmail = ref('')
 const AccountPassword = ref('')
@@ -172,11 +177,15 @@ const NoTestWallAccessToolTip =
                 <SidebarMenuItem>
                   <Divider />
                   <SidebarMenuButton @click="$router.push('/account')">
-                    <User />
-                    <span
-                      >{{ accountStore.account?.firstName }}
-                      {{ accountStore.account?.lastName }}</span
-                    >
+                    <img
+                      :src="sidebarProfilePicture"
+                      alt="profile picture"
+                      class="h-7 w-7 rounded-full object-cover border border-surface-300"
+                    />
+                    <span>
+                      {{ accountStore.account?.firstName }}
+                      {{ accountStore.account?.lastName }}
+                    </span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               </SidebarMenu>
