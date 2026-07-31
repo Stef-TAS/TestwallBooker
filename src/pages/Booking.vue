@@ -350,8 +350,12 @@ const bookingend = ref(new Date(Date.now()))
                             :value="item.id"
                           />
                           <span class="text-sm">{{ item.name }}</span>
-                          <Tag v-if="item.isAvailable == true" severity="success">Available</Tag>
-                          <Tag v-if="item.isAvailable == false" severity="danger">Unavailable</Tag>
+                          <Tag v-if="item.isAvailable == true" severity="success"
+                            >Available Now</Tag
+                          >
+                          <Tag v-if="item.isAvailable == false" severity="danger"
+                            >Unavailable Now</Tag
+                          >
                         </div>
                       </template>
                       <template #footer>
@@ -597,6 +601,8 @@ const bookingend = ref(new Date(Date.now()))
         tableStyle="min-width: 50rem"
         stripedRows
         removableSort
+        sortField="status"
+        :sortOrder="1"
         paginator
         :rows="5"
         :rowsPerPageOptions="[5, 10, 50, 100, 150]"

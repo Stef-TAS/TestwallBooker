@@ -42,28 +42,23 @@ export const useTestwallsStore = defineStore('testwalls', () => {
           now < new Date(booking.to_time),
       )
 
-      const outOfServiceBooking = currentBookings.find((booking) => {
-        const normalizedStatus = (booking.status ?? '').toLowerCase()
-        return normalizedStatus === 'crashed' || normalizedStatus === 'forcequit'
-      })
-
-      const unavailableBooking = currentBookings.find(
+      const activeBooking = currentBookings.find(
         (booking) => (booking.status ?? 'active').toLowerCase() === 'active',
       )
 
-      const availabilityStatus: 'available' | 'unavailable' | 'out_of_service' = outOfServiceBooking
+      const isOutOfService = false // TODO: add reachability check
+
+      const availabilityStatus: 'available' | 'unavailable' | 'out_of_service' = isOutOfService
         ? 'out_of_service'
-        : unavailableBooking
+        : activeBooking
           ? 'unavailable'
           : 'available'
-
-      const blockingBooking = outOfServiceBooking ?? unavailableBooking
 
       return {
         ...testwall,
         isAvailable: availabilityStatus === 'available',
         availabilityStatus,
-        currentUser: blockingBooking?.username,
+        currentUser: activeBooking?.username,
       }
     })
   })
