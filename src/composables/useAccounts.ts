@@ -4,12 +4,12 @@ export type Account = {
   id: number
   username: string
   email: string
-  first_name: string | null
-  last_name: string | null
+  firstName: string | null
+  lastName: string | null
   location: string | null
   timezone: string | null
-  profile_picture: string | null
-  created_at: string
+  profilePicture: string | null
+  createdAt: string
 }
 
 export function useAccounts() {
