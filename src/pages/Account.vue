@@ -2,6 +2,7 @@
 import { useAccountStore } from '@/stores/account'
 import { useAccounts, type Account as ApiAccount } from '@/composables/useAccounts'
 import { useAccessRights, type AccessRight } from '@/composables/useAccessRights'
+import FileUpload, { type FileUploadSelectEvent } from 'primevue/fileupload'
 import { Card, Divider, ToggleSwitch, Button, InputText, Toast, Tag, Dialog } from 'primevue'
 import Fieldset from 'primevue/fieldset'
 import Select from 'primevue/select'
@@ -27,6 +28,7 @@ const { getAllAccessRights, assignAccessRight, getUserAccessRights, revokeAccess
 const defaultAvatarUrl = new URL('../data/avatar.png', import.meta.url).href
 
 const DarkMode = ref(false)
+const profilePictureSelector = ref<{ clear: () => void } | null>(null)
 const profilePictureFile = ref<File | null>(null)
 const profilePicturePreview = ref<string | null>(null)
 
@@ -133,6 +135,10 @@ const currentProfilePicture = computed(() => {
   return profilePicturePreview.value || accountStore.account?.profilePicture || defaultAvatarUrl
 })
 
+const profilePictureChooseLabel = computed(() => {
+  return profilePictureFile.value?.name || 'Choose profile picture'
+})
+
 onMounted(async () => {
   const isDark = document.documentElement.classList.contains('dark')
   DarkMode.value = isDark
@@ -145,12 +151,17 @@ watch(DarkMode, (enabled) => {
   localStorage.setItem('theme', enabled ? 'dark' : 'light')
 })
 
-async function handleProfilePictureChange(event: Event) {
-  const input = event.target as HTMLInputElement
-  const file = input.files?.[0] ?? null
+async function handleProfilePictureChange(event: FileUploadSelectEvent) {
+  const file = event.files?.[0] ?? null
 
   profilePictureFile.value = file
   profilePicturePreview.value = file ? await fileToDataUrl(file) : null
+}
+
+function clearSelectedProfilePicture() {
+  profilePictureFile.value = null
+  profilePicturePreview.value = null
+  profilePictureSelector.value?.clear()
 }
 
 async function handleSaveProfilePicture() {
@@ -176,7 +187,7 @@ async function handleSaveProfilePicture() {
   if (updated) {
     accountStore.account.profilePicture = profilePicturePreview.value
     accountStore.persistAccountToCookie(accountStore.account)
-    profilePictureFile.value = null
+    clearSelectedProfilePicture()
     toast.add({
       severity: 'success',
       summary: 'Picture Updated',
@@ -283,8 +294,8 @@ function handleLogout() {
   </Card>
 
   <div>
-    <div class="grid grid-cols-2">
-      <Fieldset legend="Account information" class="max-w-4/5 w-full h-min shadow-lg">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <Fieldset legend="Account information" class="w-full h-full shadow-lg">
         <div class="flex flex-col text-sm p-2">
           <div class="flex justify-between">
             <span class="text-color">Username</span>
@@ -326,7 +337,7 @@ function handleLogout() {
           </div>
         </div>
       </Fieldset>
-      <Fieldset legend="Settings" class="max-w-4/5 w-full h-min shadow-lg">
+      <Fieldset legend="Settings" class="w-full h-full shadow-lg">
         <div class="flex flex-col text-sm p-2">
           <div class="flex flex-col gap-3 items-start">
             <img
@@ -334,13 +345,33 @@ function handleLogout() {
               alt="profile picture"
               class="rounded-xl shadow-lg h-32 w-32 object-cover"
             />
-            <input type="file" accept="image/*" @change="handleProfilePictureChange" />
-            <Button
-              label="Save profile picture"
-              icon="pi pi-image"
-              @click="handleSaveProfilePicture"
-              :loading="accountsLoading"
+            <FileUpload
+              ref="profilePictureSelector"
+              mode="basic"
+              name="profilePicture"
+              accept="image/*"
+              :chooseLabel="profilePictureChooseLabel"
+              @select="handleProfilePictureChange"
             />
+            <span v-if="profilePictureFile" class="text-xs text-muted-color">
+              Selected: {{ profilePictureFile.name }}
+            </span>
+            <div class="flex flex-wrap gap-2">
+              <Button
+                label="Save profile picture"
+                icon="pi pi-image"
+                @click="handleSaveProfilePicture"
+                :loading="accountsLoading"
+              />
+              <Button
+                v-if="profilePictureFile"
+                label="Clear"
+                icon="pi pi-times"
+                severity="secondary"
+                variant="outlined"
+                @click="clearSelectedProfilePicture"
+              />
+            </div>
           </div>
         </div>
         <Divider />
@@ -361,140 +392,142 @@ function handleLogout() {
           @click="handleLogout"
         />
       </Fieldset>
-    </div>
-    <div class="grid grid-cols-2 gap-4">
       <!-- Admin Section: Add New User -->
-      <div v-if="accountStore.account?.isAdmin && accountStore.showAdminContent" class="mt-6">
-        <Fieldset legend="Admin: Add New User" class="w-full shadow-lg">
-          <div class="flex flex-col gap-4 p-2">
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm mb-1">Username *</label>
-                <InputText
-                  v-model="newUserForm.username"
-                  placeholder="Enter username"
-                  class="w-full"
-                />
-              </div>
-              <div>
-                <label class="block text-sm mb-1">Email *</label>
-                <InputText
-                  v-model="newUserForm.email"
-                  type="email"
-                  placeholder="Enter email"
-                  class="w-full"
-                />
-              </div>
+      <Fieldset
+        v-if="accountStore.account?.isAdmin && accountStore.showAdminContent"
+        legend="Admin: Add New User"
+        class="w-full h-full shadow-lg"
+      >
+        <div class="flex flex-col gap-4 p-2">
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm mb-1">Username *</label>
+              <InputText
+                v-model="newUserForm.username"
+                placeholder="Enter username"
+                class="w-full"
+              />
             </div>
-
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm mb-1">Password *</label>
-                <InputText
-                  v-model="newUserForm.password"
-                  type="password"
-                  placeholder="Enter password"
-                  class="w-full"
-                />
-              </div>
-              <div>
-                <label class="block text-sm mb-1">Permission Level</label>
-                <Select
-                  v-model="selectedPermission"
-                  :options="availablePermissions"
-                  optionLabel="role_name"
-                  placeholder="Select permission level"
-                  class="w-full"
-                />
-              </div>
+            <div>
+              <label class="block text-sm mb-1">Email *</label>
+              <InputText
+                v-model="newUserForm.email"
+                type="email"
+                placeholder="Enter email"
+                class="w-full"
+              />
             </div>
-
-            <Divider />
-
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm mb-1">First Name</label>
-                <InputText
-                  v-model="newUserForm.firstName"
-                  placeholder="Enter first name"
-                  class="w-full"
-                />
-              </div>
-              <div>
-                <label class="block text-sm mb-1">Last Name</label>
-                <InputText
-                  v-model="newUserForm.lastName"
-                  placeholder="Enter last name"
-                  class="w-full"
-                />
-              </div>
-            </div>
-
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm mb-1">Location</label>
-                <InputText
-                  v-model="newUserForm.location"
-                  placeholder="Enter location"
-                  class="w-full"
-                />
-              </div>
-              <div>
-                <label class="block text-sm mb-1">Timezone</label>
-                <InputText
-                  v-model="newUserForm.timezone"
-                  placeholder="e.g., Europe/Vienna"
-                  class="w-full"
-                />
-              </div>
-            </div>
-
-            <Button
-              label="Create User"
-              @click="handleAddUser"
-              :loading="accountsLoading"
-              class="w-full mt-4"
-            />
           </div>
-        </Fieldset>
-      </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm mb-1">Password *</label>
+              <InputText
+                v-model="newUserForm.password"
+                type="password"
+                placeholder="Enter password"
+                class="w-full"
+              />
+            </div>
+            <div>
+              <label class="block text-sm mb-1">Permission Level</label>
+              <Select
+                v-model="selectedPermission"
+                :options="availablePermissions"
+                optionLabel="role_name"
+                placeholder="Select permission level"
+                class="w-full"
+              />
+            </div>
+          </div>
+
+          <Divider />
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm mb-1">First Name</label>
+              <InputText
+                v-model="newUserForm.firstName"
+                placeholder="Enter first name"
+                class="w-full"
+              />
+            </div>
+            <div>
+              <label class="block text-sm mb-1">Last Name</label>
+              <InputText
+                v-model="newUserForm.lastName"
+                placeholder="Enter last name"
+                class="w-full"
+              />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm mb-1">Location</label>
+              <InputText
+                v-model="newUserForm.location"
+                placeholder="Enter location"
+                class="w-full"
+              />
+            </div>
+            <div>
+              <label class="block text-sm mb-1">Timezone</label>
+              <InputText
+                v-model="newUserForm.timezone"
+                placeholder="e.g., Europe/Vienna"
+                class="w-full"
+              />
+            </div>
+          </div>
+
+          <Button
+            label="Create User"
+            @click="handleAddUser"
+            :loading="accountsLoading"
+            class="w-full mt-4"
+          />
+        </div>
+      </Fieldset>
 
       <!-- Admin Section: Manage Users -->
-      <div v-if="accountStore.account?.isAdmin && accountStore.showAdminContent" class="mt-6">
-        <Fieldset legend="Admin: Manage Users" class="w-full shadow-lg">
-          <DataTable
-            :value="allUsers"
-            paginator
-            :rows="10"
-            :rowsPerPageOptions="[5, 10, 25]"
-            v-model:filters="userFilters"
-            :globalFilterFields="['username', 'email', 'firstName', 'lastName']"
-            filterDisplay="menu"
-            class="w-full"
-          >
-            <template #header>
-              <div class="flex justify-end">
-                <InputText
-                  v-model="userFilters['global'].value"
-                  placeholder="Search users..."
-                  class="w-64"
-                />
-              </div>
+      <Fieldset
+        v-if="accountStore.account?.isAdmin && accountStore.showAdminContent"
+        legend="Admin: Manage Users"
+        class="w-full h-full shadow-lg"
+      >
+        <DataTable
+          :value="allUsers"
+          paginator
+          :rows="10"
+          :rowsPerPageOptions="[5, 10, 25]"
+          v-model:filters="userFilters"
+          :globalFilterFields="['username', 'email', 'firstName', 'lastName']"
+          filterDisplay="menu"
+          class="w-full"
+        >
+          <template #header>
+            <div class="flex justify-end">
+              <InputText
+                v-model="userFilters['global'].value"
+                placeholder="Search users..."
+                class="w-64"
+              />
+            </div>
+          </template>
+          <template #empty>No users found.</template>
+          <Column field="username" header="Username" sortable />
+          <Column field="email" header="Email" sortable />
+          <Column header="Name">
+            <template #body="{ data }"> {{ data.firstName }} {{ data.lastName }} </template>
+          </Column>
+          <Column header="Actions" style="width: 6rem">
+            <template #body="{ data }">
+              <Button size="small" label="Modify" @click="openModifyModal(data)" />
             </template>
-            <template #empty>No users found.</template>
-            <Column field="username" header="Username" sortable />
-            <Column field="email" header="Email" sortable />
-            <Column header="Name">
-              <template #body="{ data }"> {{ data.firstName }} {{ data.lastName }} </template>
-            </Column>
-            <Column header="Actions" style="width: 6rem">
-              <template #body="{ data }">
-                <Button size="small" label="Modify" @click="openModifyModal(data)" />
-              </template>
-            </Column>
-          </DataTable>
-        </Fieldset>
-      </div>
+          </Column>
+        </DataTable>
+      </Fieldset>
 
       <!-- Modify User Dialog -->
       <Dialog
