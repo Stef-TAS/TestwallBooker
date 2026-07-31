@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "server": "tsx watch server/index.ts",
+    "start": "NODE_ENV=production tsx server/index.ts",
     "build": "run-p type-check \"build-only {@}\" --",
     "preview": "vite preview",
     "build-only": "vite build",
