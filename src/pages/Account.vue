@@ -31,7 +31,7 @@ const defaultAvatarUrl = new URL('../data/avatar.png', import.meta.url).href
 
 const themes = [
   { id: 'light', label: 'Light', accent: '#6366f1', dark: false },
-  { id: 'dark', label: 'Dark', accent: '#6366f1', dark: true },
+  { id: 'dark', label: 'Dark', accent: '#000000', dark: true },
   { id: 'ocean', label: 'Ocean', accent: '#14b8a6', dark: true },
   { id: 'crimson', label: 'Crimson', accent: '#ef4444', dark: false },
   { id: 'hm', label: 'HM OS', accent: '#d946ef', dark: false },

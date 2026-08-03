@@ -12,13 +12,8 @@ NGINX_STATIC="/usr/share/nginx/html/booking"
 echo "==> Building frontend..."
 npm run build          # output goes to ./dist  (base = /booking/)
 
-echo "==> Compiling backend TypeScript..."
-npx tsc -p tsconfig.node.json --outDir dist_server --noEmit false 2>/dev/null || \
-  npx tsx --tsconfig tsconfig.node.json build 2>/dev/null || \
-  echo "  (using tsx at runtime — no separate compile step needed)"
-
 echo "==> Syncing static files to Nginx document root..."
-ssh "$TARGET" "sudo mkdir -p ${NGINX_STATIC}"
+ssh "$TARGET" "sudo mkdir -p ${NGINX_STATIC} && sudo chown \$USER: ${NGINX_STATIC}"
 rsync -avz --delete dist/ "${TARGET}:${NGINX_STATIC}/"
 
 echo "==> Syncing backend to ${REMOTE_APP_DIR}..."
@@ -26,11 +21,17 @@ ssh "$TARGET" "sudo mkdir -p ${REMOTE_APP_DIR} && sudo chown \$USER: ${REMOTE_AP
 rsync -avz --delete \
   --exclude 'node_modules' \
   --exclude 'dist' \
+  --exclude 'dist_server' \
   --exclude '.env' \
   --exclude 'src/python/__pycache__' \
-  server/ "${TARGET}:${REMOTE_APP_DIR}/server/"
-rsync -avz src/python/ "${TARGET}:${REMOTE_APP_DIR}/src/python/"
-rsync -avz package.json package-lock.json "${TARGET}:${REMOTE_APP_DIR}/"
+  --exclude 'src/pages' \
+  --exclude 'src/composables' \
+  --exclude 'src/stores' \
+  --exclude 'src/router' \
+  --exclude 'src/data' \
+  --include 'src/python/***' \
+  --filter 'protect .env' \
+  . "${TARGET}:${REMOTE_APP_DIR}/"
 
 echo "==> Installing production dependencies on server..."
 ssh "$TARGET" "cd ${REMOTE_APP_DIR} && npm ci --omit=dev"
