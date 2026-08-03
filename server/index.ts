@@ -61,24 +61,22 @@ initDb()
       console.log(`Server running on http://localhost:${PORT}`)
     })
 
-    const PYTHON_SCRIPT = process.env.PYTHON_SCRIPT
+    const __dirname = path.dirname(fileURLToPath(import.meta.url))
+    const PYTHON_SCRIPT = path.resolve(__dirname, '../python/server.py')
+    const pythonCmd =
+      process.env.PYTHON_CMD ?? (process.platform === 'win32' ? 'python' : 'python3')
     let pythonProcess: ChildProcess | null = null
 
-    if (PYTHON_SCRIPT) {
-      const pythonCmd = process.env.PYTHON_CMD ?? 'python3'
-      pythonProcess = spawn(pythonCmd, [PYTHON_SCRIPT], { stdio: 'inherit' })
-      console.log(
-        `Python process started: ${pythonCmd} ${PYTHON_SCRIPT} (pid ${pythonProcess.pid})`,
-      )
+    pythonProcess = spawn(pythonCmd, [PYTHON_SCRIPT], { stdio: 'inherit' })
+    console.log(`Python process started: ${pythonCmd} ${PYTHON_SCRIPT} (pid ${pythonProcess.pid})`)
 
-      pythonProcess.on('error', (err) => {
-        console.error('Failed to start Python process:', err)
-      })
+    pythonProcess.on('error', (err) => {
+      console.error('Failed to start Python process:', err)
+    })
 
-      pythonProcess.on('exit', (code, signal) => {
-        console.warn(`Python process exited (code=${code}, signal=${signal})`)
-      })
-    }
+    pythonProcess.on('exit', (code, signal) => {
+      console.warn(`Python process exited (code=${code}, signal=${signal})`)
+    })
 
     function shutdown() {
       if (pythonProcess && !pythonProcess.killed) {
