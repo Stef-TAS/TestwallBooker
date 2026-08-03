@@ -1,0 +1,15 @@
+[Unit]
+Description=TestwallBooker Node.js Backend
+After=network.target mysql.service
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/opt/testwallbooker
+ExecStart=/usr/bin/node /opt/testwallbooker/server/index.js
+Restart=on-failure
+RestartSec=5
+EnvironmentFile=/opt/testwallbooker/.env
+
+[Install]
+WantedBy=multi-user.target
