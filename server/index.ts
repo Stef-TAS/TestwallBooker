@@ -62,9 +62,8 @@ initDb()
     })
 
     const __dirname = path.dirname(fileURLToPath(import.meta.url))
-    const PYTHON_SCRIPT = path.resolve(__dirname, '../python/server.py')
-    const pythonCmd =
-      process.env.PYTHON_CMD ?? (process.platform === 'win32' ? 'python' : 'python3')
+    const PYTHON_SCRIPT = path.resolve(__dirname, '../src/python/server.py')
+    const pythonCmd = process.env.PYTHON_CMD ?? (process.platform === 'win32' ? 'py' : 'python3')
     let pythonProcess: ChildProcess | null = null
 
     pythonProcess = spawn(pythonCmd, [PYTHON_SCRIPT], { stdio: 'inherit' })

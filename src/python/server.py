@@ -4,14 +4,12 @@ Run:
     python server.py --host 0.0.0.0 --port 8080
 """
 
-from __future__ import annotations
-
 import argparse
 import json
 import threading
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Dict
 
 from flask import Flask, jsonify, request
 
@@ -20,7 +18,7 @@ DATA_FILE = Path(__file__).with_name("machines.json")
 DATA_LOCK = threading.Lock()
 
 
-def load_state() -> dict[str, dict[str, Any]]:
+def load_state() -> Dict[str, Dict[str, Any]]:
     """Load the latest machine state map from disk."""
     if not DATA_FILE.exists():
         return {}
@@ -28,7 +26,7 @@ def load_state() -> dict[str, dict[str, Any]]:
         return json.load(handle)
 
 
-def save_state(state: dict[str, dict[str, Any]]) -> None:
+def save_state(state: Dict[str, Dict[str, Any]]) -> None:
     """Persist the machine state map to disk atomically."""
     temp_file = DATA_FILE.with_suffix(".tmp")
     with temp_file.open("w", encoding="utf-8") as handle:
