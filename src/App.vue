@@ -79,12 +79,13 @@ const NoTestWallAccessToolTip =
                 <SidebarMenuItem>
                   <SidebarMenuButton @click="$router.push('/overview')">
                     <Warehouse />
-                    <span class="text-xl">Wall Test Facility</span>
+                    <span class="text-xl"> &nbsp Wall Test Facility</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
                   <SidebarTrigger severity="secondary" target="mainsidebar" :text="true">
                     <SidebarIcon />
+                    <span class="sidebar-trigger-label">&nbsp Collapse Sidebar</span>
                   </SidebarTrigger>
                 </SidebarMenuItem>
               </SidebarMenu>
@@ -235,3 +236,25 @@ const NoTestWallAccessToolTip =
     </Card>
   </div>
 </template>
+
+<style scoped>
+.sidebar-trigger-label {
+  display: inline-block;
+  overflow: hidden;
+  white-space: nowrap;
+  max-width: 12rem;
+  opacity: 1;
+  margin-left: 0.25rem;
+  transition:
+    max-width 180ms ease,
+    opacity 120ms ease,
+    margin-left 180ms ease;
+}
+
+#mainsidebar[data-state='collapsed'] .sidebar-trigger-label {
+  max-width: 0;
+  opacity: 0;
+  margin-left: 0;
+  pointer-events: none;
+}
+</style>

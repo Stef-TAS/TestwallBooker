@@ -610,12 +610,12 @@ const bookingend = ref(new Date(Date.now()))
         <Column field="id" header="BookingId" sortable />
         <Column field="testwallId" header="TestwallId" sortable />
         <Column field="testwallName" header="Testwall" sortable />
-        <Column field="startDate" header="StartDate" sortable>
+        <Column field="startDate" header="StartDate  (mm/dd/yyyy)" sortable>
           <template #body="{ data }">
             <p>{{ data.startDate.toLocaleDateString() }}</p>
           </template>
         </Column>
-        <Column field="endDate" header="EndDate" sortable>
+        <Column field="endDate" header="EndDate  (mm/dd/yyyy)" sortable>
           <template #body="{ data }">
             <p>{{ data.endDate.toLocaleDateString() }}</p>
           </template>
