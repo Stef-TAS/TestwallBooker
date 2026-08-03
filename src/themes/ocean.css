@@ -1,0 +1,116 @@
+/*
+ * 🌊 Ocean Theme 🌊
+ * Deep-sea dark base, teal primary, navy-teal surfaces.
+ * Like diving into the Pacific at midnight.
+ */
+
+/* ─── Base variables ────────────────────────────────────────────────────── */
+html[data-theme='ocean'] {
+  /* 🐚 Primary — teal */
+  --p-primary-50: #f0fdfa !important;
+  --p-primary-100: #ccfbf1 !important;
+  --p-primary-200: #99f6e4 !important;
+  --p-primary-300: #5eead4 !important;
+  --p-primary-400: #2dd4bf !important;
+  --p-primary-500: #14b8a6 !important; /* ocean surface      */
+  --p-primary-600: #0d9488 !important;
+  --p-primary-700: #0f766e !important;
+  --p-primary-800: #115e59 !important;
+  --p-primary-900: #134e4a !important;
+  --p-primary-950: #042f2e !important;
+
+  /* 🌊 Surface — deep navy-teal scale (dark mode) */
+  --p-surface-0: #ffffff !important; /* rarely used in dark */
+  --p-surface-50: #e6fffe !important; /* light teal (text)   */
+  --p-surface-100: #b3f5f0 !important;
+  --p-surface-200: #80ebe0 !important;
+  --p-surface-300: #4dd8cc !important;
+  --p-surface-400: #26c5b8 !important;
+  --p-surface-500: #0f8c82 !important;
+  --p-surface-600: #0a5e57 !important;
+  --p-surface-700: #073d38 !important; /* component bg       */
+  --p-surface-800: #052e2a !important; /* card bg            */
+  --p-surface-900: #031e1b !important; /* deep bg            */
+  --p-surface-950: #020f0e !important; /* deepest dark       */
+
+  /* ✍️  Text — light teal-white for dark backgrounds */
+  --p-text-color: #e6fffe !important;
+  --p-text-hover-color: #ffffff !important;
+  --p-text-muted-color: #4dd8cc !important;
+  --p-text-hover-muted-color: #80ebe0 !important;
+
+  /* 💡 Highlight — teal glow */
+  --p-highlight-background: rgba(13, 148, 136, 0.25) !important;
+  --p-highlight-focus-background: rgba(13, 148, 136, 0.4) !important;
+  --p-highlight-color: #5eead4 !important;
+  --p-highlight-focus-color: #99f6e4 !important;
+
+  /* 🔮 Content areas */
+  --p-content-background: #052e2a !important;
+  --p-content-border-color: #0f766e !important;
+
+  /* 🎹 Form fields */
+  --p-form-field-background: #073d38 !important;
+  --p-form-field-border-color: #0f766e !important;
+  --p-form-field-hover-border-color: #14b8a6 !important;
+  --p-form-field-focus-border-color: #2dd4bf !important;
+  --p-form-field-color: #e6fffe !important;
+  --p-form-field-placeholder-color: #4dd8cc !important;
+  --p-form-field-disabled-background: #052e2a !important;
+  --p-form-field-disabled-color: #0f766e !important;
+  --p-form-field-icon-color: #26c5b8 !important;
+
+  /* 🌟 Rounded corners */
+  --p-border-radius-xs: 3px !important;
+  --p-border-radius-sm: 5px !important;
+  --p-border-radius-md: 8px !important;
+  --p-border-radius-lg: 12px !important;
+  --p-border-radius-xl: 16px !important;
+
+  /* 🌊 Overlay modals */
+  --p-overlay-modal-background: #052e2a !important;
+  --p-overlay-modal-border-color: #0f766e !important;
+  --p-overlay-modal-shadow:
+    0 20px 40px -8px rgba(13, 148, 136, 0.4), 0 8px 16px -4px rgba(45, 212, 191, 0.2) !important;
+
+  /* 🐟 Select / popover overlays */
+  --p-overlay-select-background: #073d38 !important;
+  --p-overlay-select-border-color: #0f766e !important;
+
+  /* 🔵 Focus ring */
+  --p-focus-ring-color: #2dd4bf !important;
+
+  /* 🖼️  Layout — transparent so body image shows through */
+  --p-sidebar-layout-background: transparent !important;
+  --p-sidebar-main-background: transparent !important;
+  --p-sidebar-panel-background: rgba(2, 15, 14, 0.78) !important;
+}
+
+/* ─── Deep ocean page background ───────────────────────────────────────── */
+html[data-theme='ocean'] body {
+  background: linear-gradient(160deg, #020f0e 0%, #031e1b 50%, #052e2a 100%) !important;
+  background-attachment: fixed !important;
+  min-height: 100vh;
+}
+
+/* ─── Frosted-glass sidebar panel ──────────────────────────────────────── */
+html[data-theme='ocean'] .p-sidebar-panel {
+  backdrop-filter: blur(12px) saturate(160%);
+  -webkit-backdrop-filter: blur(12px) saturate(160%);
+}
+
+/* ─── Cards and Fieldsets — dark translucent glass ─────────────────────── */
+html[data-theme='ocean'] .p-card,
+html[data-theme='ocean'] .p-fieldset {
+  background: rgba(5, 46, 42, 0.8) !important;
+  backdrop-filter: blur(8px) saturate(140%);
+  -webkit-backdrop-filter: blur(8px) saturate(140%);
+}
+
+/* ─── Fieldset legend ───────────────────────────────────────────────────── */
+html[data-theme='ocean'] .p-fieldset .p-fieldset-legend {
+  border-color: #0f766e;
+  box-shadow:
+    0 1px 8px 0 rgba(20, 184, 166, 0.2),
+    0 1px 2px -1px rgba(45, 212, 191, 0.1);
+}

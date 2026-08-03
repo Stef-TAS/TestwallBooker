@@ -1,0 +1,105 @@
+/*
+ * ✨ Hannah Montana Theme ✨
+ * "You get the best of both worlds" — a full pop-star makeover.
+ * Warm fuchsia primary, lilac surfaces, dreamy pink backgrounds, star-bright accents.
+ */
+
+/* ─── Base variables ────────────────────────────────────────────────────── */
+html[data-theme='hm'] {
+  /* ⭐ Pop-star primary — fuchsia / purple */
+  --p-primary-50: #fdf4ff !important;
+  --p-primary-100: #fae8ff !important;
+  --p-primary-200: #f5d0fe !important;
+  --p-primary-300: #f0abfc !important;
+  --p-primary-400: #e879f9 !important;
+  --p-primary-500: #d946ef !important; /* mic-drop purple   */
+  --p-primary-600: #c026d3 !important;
+  --p-primary-700: #a21caf !important;
+  --p-primary-800: #86198f !important;
+  --p-primary-900: #701a75 !important;
+  --p-primary-950: #4a044e !important;
+
+  /* 🖼️  Layout — transparent so the body image shows through */
+  --p-sidebar-layout-background: transparent !important;
+  --p-sidebar-main-background: transparent !important;
+  --p-sidebar-panel-background: rgba(255, 240, 255, 0.72) !important;
+
+  /* 🌸 Surface — warm lilac/pink palette (replaces default slate/zinc) */
+  --p-surface-0: #ffffff !important; /* pure white        */
+  --p-surface-50: #fdf4ff !important; /* stage fog         */
+  --p-surface-100: #fae8ff !important; /* glitter mist      */
+  --p-surface-200: #f3d0fe !important; /* sequin shimmer    */
+  --p-surface-300: #e9a8fc !important; /* neon sign glow    */
+  --p-surface-400: #d97ef8 !important; /* spotlight pink    */
+  --p-surface-500: #bc52da !important; /* stage lights      */
+  --p-surface-600: #9630b8 !important; /* velvet curtain    */
+  --p-surface-700: #3f1d52 !important; /* main text (dark)  */
+  --p-surface-800: #2e1240 !important;
+  --p-surface-900: #1e0c2b !important;
+  --p-surface-950: #110619 !important;
+
+  /* ✍️  Text — dark purple, readable on light backgrounds */
+  --p-text-color: #3f1d52 !important;
+  --p-text-hover-color: #2e1240 !important;
+  --p-text-muted-color: #9630b8 !important;
+  --p-text-hover-muted-color: #7a218f !important;
+
+  /* 💜 Highlight — selected list items, focused options */
+  --p-highlight-background: #fae8ff !important;
+  --p-highlight-focus-background: #f3d0fe !important;
+  --p-highlight-color: #a21caf !important;
+  --p-highlight-focus-color: #86198f !important;
+
+  /* 🔮 Content areas (panels, cards, overlays) */
+  --p-content-background: #ffffff !important;
+  --p-content-border-color: #e9a8fc !important;
+
+  /* 🎹 Form fields */
+  --p-form-field-background: #ffffff !important;
+  --p-form-field-border-color: #e9a8fc !important;
+  --p-form-field-hover-border-color: #d97ef8 !important;
+  --p-form-field-focus-border-color: #d946ef !important;
+  --p-form-field-color: #3f1d52 !important;
+  --p-form-field-placeholder-color: #bc52da !important;
+  --p-form-field-disabled-background: #f3d0fe !important;
+  --p-form-field-disabled-color: #9630b8 !important;
+  --p-form-field-icon-color: #d97ef8 !important;
+
+  /* 🌟 Rounded corners — slightly rounder for a playful pop feel */
+  --p-border-radius-xs: 4px !important;
+  --p-border-radius-sm: 6px !important;
+  --p-border-radius-md: 10px !important;
+  --p-border-radius-lg: 14px !important;
+  --p-border-radius-xl: 20px !important;
+
+  /* 💫 Overlay modals / dialogs */
+  --p-overlay-modal-background: #fff0ff !important;
+  --p-overlay-modal-border-color: #e9a8fc !important;
+  --p-overlay-modal-shadow:
+    0 20px 40px -8px rgba(169, 28, 175, 0.25), 0 8px 16px -4px rgba(217, 70, 239, 0.15) !important;
+
+  /* 🎀 Select / popover overlays */
+  --p-overlay-select-background: #ffffff !important;
+  --p-overlay-select-border-color: #e9a8fc !important;
+
+  /* ✨ Focus ring */
+  --p-focus-ring-color: #e879f9 !important;
+}
+
+/* ─── Page background ───────────────────────────────────────────────────── */
+html[data-theme='hm'] body {
+  background-image: url('./hm_background.png') !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-attachment: fixed !important;
+  min-height: 100vh;
+}
+
+/* ─── Fieldset legend — match the pink border ───────────────────────────── */
+html[data-theme='hm'] .p-fieldset .p-fieldset-legend {
+  border-color: #e9a8fc;
+  box-shadow:
+    0 1px 8px 0 rgba(217, 70, 239, 0.12),
+    0 1px 2px -1px rgba(217, 70, 239, 0.08);
+}

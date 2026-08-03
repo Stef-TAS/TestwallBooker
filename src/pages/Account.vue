@@ -27,8 +27,30 @@ const { getAllAccessRights, assignAccessRight, getUserAccessRights, revokeAccess
 
 const defaultAvatarUrl = new URL('../data/avatar.png', import.meta.url).href
 
-const DarkMode = ref(false)
-const profilePictureSelector = ref<{ clear: () => void } | null>(null)
+const themes = [
+  { id: 'light', label: 'Light', accent: '#6366f1', dark: false },
+  { id: 'dark', label: 'Dark', accent: '#6366f1', dark: true },
+  { id: 'ocean', label: 'Ocean', accent: '#14b8a6', dark: true },
+  { id: 'crimson', label: 'Crimson', accent: '#ef4444', dark: false },
+  { id: 'hm', label: 'HM OS', accent: '#d946ef', dark: false },
+  { id: 'highcontrast', label: 'High Contrast', accent: '#facc15', dark: true },
+]
+
+type ThemeId = 'light' | 'dark' | 'ocean' | 'crimson' | 'hm' | 'highcontrast'
+const activeTheme = ref<ThemeId>((localStorage.getItem('theme') as ThemeId) ?? 'light')
+
+function applyTheme(id: ThemeId) {
+  const theme = themes.find((t) => t.id === id)!
+  document.documentElement.classList.toggle('dark', theme.dark)
+  document.documentElement.setAttribute('data-theme', id)
+  localStorage.setItem('theme', id)
+  activeTheme.value = id
+}
+
+const use24HourTime = ref(localStorage.getItem('use24HourTime') === 'true')
+const compactView = ref(localStorage.getItem('compactView') === 'true')
+const autoRefresh = ref(localStorage.getItem('autoRefresh') === 'true')
+const fu = ref<{ clear: () => void; choose: () => void } | null>(null)
 const profilePictureFile = ref<File | null>(null)
 const profilePicturePreview = ref<string | null>(null)
 
@@ -135,21 +157,14 @@ const currentProfilePicture = computed(() => {
   return profilePicturePreview.value || accountStore.account?.profilePicture || defaultAvatarUrl
 })
 
-const profilePictureChooseLabel = computed(() => {
-  return profilePictureFile.value?.name || 'Choose profile picture'
-})
-
 onMounted(async () => {
-  const isDark = document.documentElement.classList.contains('dark')
-  DarkMode.value = isDark
   availablePermissions.value = await getAllAccessRights()
   await loadAllUsers()
 })
 
-watch(DarkMode, (enabled) => {
-  document.documentElement.classList.toggle('dark', enabled)
-  localStorage.setItem('theme', enabled ? 'dark' : 'light')
-})
+watch(use24HourTime, (v) => localStorage.setItem('use24HourTime', String(v)))
+watch(compactView, (v) => localStorage.setItem('compactView', String(v)))
+watch(autoRefresh, (v) => localStorage.setItem('autoRefresh', String(v)))
 
 async function handleProfilePictureChange(event: FileUploadSelectEvent) {
   const file = event.files?.[0] ?? null
@@ -161,7 +176,7 @@ async function handleProfilePictureChange(event: FileUploadSelectEvent) {
 function clearSelectedProfilePicture() {
   profilePictureFile.value = null
   profilePicturePreview.value = null
-  profilePictureSelector.value?.clear()
+  fu.value?.clear()
 }
 
 async function handleSaveProfilePicture() {
@@ -258,6 +273,18 @@ async function handleAddUser() {
   }
 }
 
+function onChoose() {
+  fu.value?.choose()
+}
+
+function formatSize(bytes: number): string {
+  if (bytes === 0) return '0 B'
+  const k = 1024
+  const sizes = ['B', 'KB', 'MB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]
+}
+
 function fileToDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
@@ -339,50 +366,171 @@ function handleLogout() {
       </Fieldset>
       <Fieldset legend="Settings" class="w-full h-full shadow-lg">
         <div class="flex flex-col text-sm p-2">
-          <div class="flex flex-col gap-3 items-start">
+          <div class="flex items-start gap-4">
             <img
               :src="currentProfilePicture"
               alt="profile picture"
-              class="rounded-xl shadow-lg h-32 w-32 object-cover"
+              class="rounded-xl shadow-lg w-2/5 object-cover shrink-0"
             />
-            <FileUpload
-              ref="profilePictureSelector"
-              mode="basic"
-              name="profilePicture"
-              accept="image/*"
-              :maxFileSize="2000000"
-              :chooseLabel="profilePictureChooseLabel"
-              @select="handleProfilePictureChange"
-            />
-            <span v-if="profilePictureFile" class="text-xs text-muted-color">
-              Selected: {{ profilePictureFile.name }}
-            </span>
-            <div class="flex flex-wrap gap-2">
+            <div class="flex flex-col gap-2 flex-1">
+              <FileUpload
+                ref="fu"
+                name="profilePicture"
+                accept="image/*"
+                :maxFileSize="2000000"
+                mode="advanced"
+                :showUploadButton="false"
+                :pt="{ root: { class: 'border-0!' }, header: { class: 'hidden!' } }"
+                @select="handleProfilePictureChange"
+                @clear="clearSelectedProfilePicture"
+              >
+                <template
+                  #content="{
+                    files,
+                    uploadedFiles,
+                    removeFileCallback,
+                    removeUploadedFileCallback,
+                  }"
+                >
+                  <div
+                    v-if="uploadedFiles?.length > 0 || files?.length > 0"
+                    class="flex flex-col gap-2"
+                  >
+                    <div
+                      v-for="(file, i) of uploadedFiles"
+                      :key="file.name + file.type + file.size"
+                      class="flex items-center gap-3 px-3 py-2 rounded-md bg-surface-50 dark:bg-surface-800"
+                    >
+                      <i class="pi pi-file text-primary shrink-0" />
+                      <div class="flex-1 min-w-0">
+                        <div class="text-sm truncate">{{ file.name }}</div>
+                        <div class="flex items-center gap-1 text-xs">
+                          <span class="text-muted-color tabular-nums">{{
+                            formatSize(file.size)
+                          }}</span>
+                          <span class="text-muted-color">·</span>
+                          <span class="text-emerald-500">Completed</span>
+                        </div>
+                      </div>
+                      <Button
+                        type="button"
+                        icon="pi pi-times"
+                        text
+                        severity="secondary"
+                        size="small"
+                        rounded
+                        @click="removeUploadedFileCallback(i)"
+                      />
+                    </div>
+                    <div
+                      v-for="(file, i) of files"
+                      :key="file.name + file.type + file.size"
+                      class="flex items-center gap-3 px-3 py-2 rounded-md bg-surface-50 dark:bg-surface-800"
+                    >
+                      <i class="pi pi-file text-primary shrink-0" />
+                      <div class="flex-1 min-w-0">
+                        <div class="text-sm truncate">{{ file.name }}</div>
+                        <div class="flex items-center gap-1 text-xs">
+                          <span class="text-muted-color tabular-nums">{{
+                            formatSize(file.size)
+                          }}</span>
+                          <span class="text-muted-color">·</span>
+                          <span class="text-primary">Pending</span>
+                        </div>
+                      </div>
+                      <Button
+                        type="button"
+                        icon="pi pi-times"
+                        text
+                        severity="secondary"
+                        size="small"
+                        rounded
+                        @click="removeFileCallback(i)"
+                      />
+                    </div>
+                  </div>
+                </template>
+                <template #empty>
+                  <div
+                    class="flex flex-col items-center gap-2 py-6 cursor-pointer"
+                    @click="onChoose"
+                  >
+                    <i class="pi pi-cloud-upload text-4xl text-muted-color" />
+                    <div class="text-sm font-medium">Drop files or click to browse</div>
+                    <div class="text-xs text-muted-color">Up to 2 MB</div>
+                  </div>
+                </template>
+              </FileUpload>
               <Button
                 label="Save profile picture"
                 icon="pi pi-image"
                 @click="handleSaveProfilePicture"
                 :loading="accountsLoading"
               />
-              <Button
-                v-if="profilePictureFile"
-                label="Clear"
-                icon="pi pi-times"
-                severity="secondary"
-                variant="outlined"
-                @click="clearSelectedProfilePicture"
-              />
             </div>
           </div>
         </div>
         <Divider />
-        <div class="flex justify-between mb-1">
-          <label for="DarkmodeSwitch" class="text-color">Darkmode</label>
-          <ToggleSwitch v-model="DarkMode" inputId="DarkmodeSwitch" />
+        <div class="flex flex-col gap-2">
+          <p class="text-xs font-semibold uppercase tracking-wider text-muted-color mb-1">
+            Appearance
+          </p>
+          <div class="flex justify-between items-center">
+            <label class="text-color">Theme</label>
+            <Select
+              :modelValue="activeTheme"
+              :options="themes"
+              optionLabel="label"
+              optionValue="id"
+              class="w-40"
+              @update:modelValue="applyTheme"
+            >
+              <template #value="{ value }">
+                <div class="flex items-center gap-2">
+                  <span
+                    class="h-3 w-3 rounded-full shrink-0 ring-1 ring-black/10"
+                    :style="{ background: themes.find((t) => t.id === value)?.accent }"
+                  />
+                  <span>{{ themes.find((t) => t.id === value)?.label }}</span>
+                </div>
+              </template>
+              <template #option="{ option }">
+                <div class="flex items-center gap-2">
+                  <span
+                    class="h-3 w-3 rounded-full shrink-0 ring-1 ring-black/10"
+                    :style="{ background: option.accent }"
+                  />
+                  <span>{{ option.label }}</span>
+                </div>
+              </template>
+            </Select>
+          </div>
+          <div class="flex justify-between items-center">
+            <label for="CompactViewSwitch" class="text-color">Compact view</label>
+            <ToggleSwitch v-model="compactView" inputId="CompactViewSwitch" />
+          </div>
         </div>
-        <div v-if="accountStore.account?.isAdmin" class="flex justify-between">
-          <label for="AdminContentSwitch" class="text-color">Admin Content</label>
-          <ToggleSwitch v-model="accountStore.showAdminContent" inputId="AdminContentSwitch" />
+        <Divider />
+        <div class="flex flex-col gap-2">
+          <p class="text-xs font-semibold uppercase tracking-wider text-muted-color mb-1">
+            Display
+          </p>
+          <div class="flex justify-between items-center">
+            <label for="Use24HourSwitch" class="text-color">24-hour time</label>
+            <ToggleSwitch v-model="use24HourTime" inputId="Use24HourSwitch" />
+          </div>
+          <div class="flex justify-between items-center">
+            <label for="AutoRefreshSwitch" class="text-color">Auto-refresh overview</label>
+            <ToggleSwitch v-model="autoRefresh" inputId="AutoRefreshSwitch" />
+          </div>
+        </div>
+        <div v-if="accountStore.account?.isAdmin" class="flex flex-col gap-2 mt-2">
+          <Divider />
+          <p class="text-xs font-semibold uppercase tracking-wider text-muted-color mb-1">Admin</p>
+          <div class="flex justify-between items-center">
+            <label for="AdminContentSwitch" class="text-color">Show admin content</label>
+            <ToggleSwitch v-model="accountStore.showAdminContent" inputId="AdminContentSwitch" />
+          </div>
         </div>
         <Divider />
         <Button

@@ -1,0 +1,116 @@
+/*
+ * 🔴 Crimson Theme 🔴
+ * Light base, deep red primary, warm rose surfaces.
+ * Bold, dramatic — like velvet and candlelight.
+ */
+
+/* ─── Base variables ────────────────────────────────────────────────────── */
+html[data-theme='crimson'] {
+  /* 🌹 Primary — deep red */
+  --p-primary-50: #fef2f2 !important;
+  --p-primary-100: #fee2e2 !important;
+  --p-primary-200: #fecaca !important;
+  --p-primary-300: #fca5a5 !important;
+  --p-primary-400: #f87171 !important;
+  --p-primary-500: #ef4444 !important; /* signature red      */
+  --p-primary-600: #dc2626 !important;
+  --p-primary-700: #b91c1c !important;
+  --p-primary-800: #991b1b !important;
+  --p-primary-900: #7f1d1d !important;
+  --p-primary-950: #450a0a !important;
+
+  /* 🌸 Surface — warm rose/cream scale */
+  --p-surface-0: #ffffff !important; /* pure white         */
+  --p-surface-50: #fff1f2 !important; /* blush white        */
+  --p-surface-100: #ffe4e6 !important; /* rose mist          */
+  --p-surface-200: #fecdd3 !important; /* soft rose          */
+  --p-surface-300: #fda4af !important; /* warm rose          */
+  --p-surface-400: #fb7185 !important; /* bright rose        */
+  --p-surface-500: #f43f5e !important; /* vivid rose         */
+  --p-surface-600: #e11d48 !important; /* deep crimson       */
+  --p-surface-700: #4c0519 !important; /* near-black red (text) */
+  --p-surface-800: #380311 !important;
+  --p-surface-900: #25020c !important;
+  --p-surface-950: #120107 !important;
+
+  /* ✍️  Text — dark crimson, readable on light backgrounds */
+  --p-text-color: #4c0519 !important;
+  --p-text-hover-color: #380311 !important;
+  --p-text-muted-color: #e11d48 !important;
+  --p-text-hover-muted-color: #b91c1c !important;
+
+  /* 💡 Highlight — rose glow */
+  --p-highlight-background: #ffe4e6 !important;
+  --p-highlight-focus-background: #fecdd3 !important;
+  --p-highlight-color: #b91c1c !important;
+  --p-highlight-focus-color: #991b1b !important;
+
+  /* 🔮 Content areas */
+  --p-content-background: #ffffff !important;
+  --p-content-border-color: #fda4af !important;
+
+  /* 🎹 Form fields */
+  --p-form-field-background: #ffffff !important;
+  --p-form-field-border-color: #fda4af !important;
+  --p-form-field-hover-border-color: #fb7185 !important;
+  --p-form-field-focus-border-color: #ef4444 !important;
+  --p-form-field-color: #4c0519 !important;
+  --p-form-field-placeholder-color: #f43f5e !important;
+  --p-form-field-disabled-background: #fecdd3 !important;
+  --p-form-field-disabled-color: #e11d48 !important;
+  --p-form-field-icon-color: #fb7185 !important;
+
+  /* 🌟 Rounded corners */
+  --p-border-radius-xs: 3px !important;
+  --p-border-radius-sm: 5px !important;
+  --p-border-radius-md: 8px !important;
+  --p-border-radius-lg: 12px !important;
+  --p-border-radius-xl: 16px !important;
+
+  /* 💫 Overlay modals */
+  --p-overlay-modal-background: #fff1f2 !important;
+  --p-overlay-modal-border-color: #fda4af !important;
+  --p-overlay-modal-shadow:
+    0 20px 40px -8px rgba(220, 38, 38, 0.2), 0 8px 16px -4px rgba(248, 113, 113, 0.15) !important;
+
+  /* 🌹 Select / popover overlays */
+  --p-overlay-select-background: #ffffff !important;
+  --p-overlay-select-border-color: #fda4af !important;
+
+  /* 🔴 Focus ring */
+  --p-focus-ring-color: #f87171 !important;
+
+  /* 🖼️  Layout — transparent so body image shows through */
+  --p-sidebar-layout-background: transparent !important;
+  --p-sidebar-main-background: transparent !important;
+  --p-sidebar-panel-background: rgba(255, 245, 245, 0.75) !important;
+}
+
+/* ─── Warm page background ──────────────────────────────────────────────── */
+html[data-theme='crimson'] body {
+  background: linear-gradient(160deg, #fff1f2 0%, #ffe4e6 55%, #fecdd3 100%) !important;
+  background-attachment: fixed !important;
+  min-height: 100vh;
+}
+
+/* ─── Frosted-glass sidebar panel ──────────────────────────────────────── */
+html[data-theme='crimson'] .p-sidebar-panel {
+  backdrop-filter: blur(12px) saturate(160%);
+  -webkit-backdrop-filter: blur(12px) saturate(160%);
+}
+
+/* ─── Cards and Fieldsets — warm translucent glass ─────────────────────── */
+html[data-theme='crimson'] .p-card,
+html[data-theme='crimson'] .p-fieldset {
+  background: rgba(255, 248, 248, 0.82) !important;
+  backdrop-filter: blur(8px) saturate(140%);
+  -webkit-backdrop-filter: blur(8px) saturate(140%);
+}
+
+/* ─── Fieldset legend ───────────────────────────────────────────────────── */
+html[data-theme='crimson'] .p-fieldset .p-fieldset-legend {
+  border-color: #fda4af;
+  box-shadow:
+    0 1px 8px 0 rgba(239, 68, 68, 0.15),
+    0 1px 2px -1px rgba(248, 113, 113, 0.1);
+}

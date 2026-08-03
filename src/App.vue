@@ -195,7 +195,7 @@ const NoTestWallAccessToolTip =
       </SidebarMain>
     </SidebarLayout>
   </div>
-  <div v-else class="flex items-center justify-center h-screen">
+  <div v-else class="login-screen flex items-center justify-center h-screen">
     <Card class="w-full max-w-sm">
       <template #content>
         <p class="text-4xl text-blue-600 dark:text-sky-400">Wall Test Facility</p>
@@ -238,6 +238,13 @@ const NoTestWallAccessToolTip =
 </template>
 
 <style scoped>
+.login-screen {
+  background-image: url('./themes/login_background.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
 .sidebar-trigger-label {
   display: inline-block;
   overflow: hidden;

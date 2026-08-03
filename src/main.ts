@@ -11,10 +11,12 @@ import App from './App.vue'
 import router from './router'
 import './style.css'
 
-const storedTheme = localStorage.getItem('theme')
-if (storedTheme === 'dark') {
+const storedTheme = localStorage.getItem('theme') ?? 'light'
+const darkThemes = ['dark', 'ocean', 'highcontrast']
+if (darkThemes.includes(storedTheme)) {
   document.documentElement.classList.add('dark')
 }
+document.documentElement.setAttribute('data-theme', storedTheme)
 
 const AppPreset = definePreset(Aura, {
   semantic: {
