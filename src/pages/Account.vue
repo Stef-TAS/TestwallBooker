@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { useAccountStore } from '@/stores/account'
+import { useSettingsStore } from '@/stores/settings'
 import { useAccounts, type Account as ApiAccount } from '@/composables/useAccounts'
 import { useAccessRights, type AccessRight } from '@/composables/useAccessRights'
 import FileUpload, { type FileUploadSelectEvent } from 'primevue/fileupload'
@@ -14,6 +15,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 const toast = useToast()
 
 const accountStore = useAccountStore()
+const settingsStore = useSettingsStore()
 const {
   registerAccount,
   updateAccount,
@@ -47,9 +49,6 @@ function applyTheme(id: ThemeId) {
   activeTheme.value = id
 }
 
-const use24HourTime = ref(localStorage.getItem('use24HourTime') === 'true')
-const compactView = ref(localStorage.getItem('compactView') === 'true')
-const autoRefresh = ref(localStorage.getItem('autoRefresh') === 'true')
 const fu = ref<{ clear: () => void; choose: () => void } | null>(null)
 const profilePictureFile = ref<File | null>(null)
 const profilePicturePreview = ref<string | null>(null)
@@ -161,10 +160,6 @@ onMounted(async () => {
   availablePermissions.value = await getAllAccessRights()
   await loadAllUsers()
 })
-
-watch(use24HourTime, (v) => localStorage.setItem('use24HourTime', String(v)))
-watch(compactView, (v) => localStorage.setItem('compactView', String(v)))
-watch(autoRefresh, (v) => localStorage.setItem('autoRefresh', String(v)))
 
 async function handleProfilePictureChange(event: FileUploadSelectEvent) {
   const file = event.files?.[0] ?? null
@@ -507,7 +502,7 @@ function handleLogout() {
           </div>
           <div class="flex justify-between items-center">
             <label for="CompactViewSwitch" class="text-color">Compact view</label>
-            <ToggleSwitch v-model="compactView" inputId="CompactViewSwitch" />
+            <ToggleSwitch v-model="settingsStore.compactView" inputId="CompactViewSwitch" />
           </div>
         </div>
         <Divider />
@@ -517,11 +512,7 @@ function handleLogout() {
           </p>
           <div class="flex justify-between items-center">
             <label for="Use24HourSwitch" class="text-color">24-hour time</label>
-            <ToggleSwitch v-model="use24HourTime" inputId="Use24HourSwitch" />
-          </div>
-          <div class="flex justify-between items-center">
-            <label for="AutoRefreshSwitch" class="text-color">Auto-refresh overview</label>
-            <ToggleSwitch v-model="autoRefresh" inputId="AutoRefreshSwitch" />
+            <ToggleSwitch v-model="settingsStore.use24HourTime" inputId="Use24HourSwitch" />
           </div>
         </div>
         <div v-if="accountStore.account?.isAdmin" class="flex flex-col gap-2 mt-2">
@@ -648,8 +639,9 @@ function handleLogout() {
         <DataTable
           :value="allUsers"
           paginator
-          :rows="10"
+          :rows="settingsStore.compactView ? 15 : 10"
           :rowsPerPageOptions="[5, 10, 25]"
+          :size="settingsStore.compactView ? 'small' : undefined"
           v-model:filters="userFilters"
           :globalFilterFields="['username', 'email', 'firstName', 'lastName']"
           filterDisplay="menu"

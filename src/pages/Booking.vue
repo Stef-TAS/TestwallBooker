@@ -26,8 +26,10 @@ import { useTestwallsStore } from '../stores/testwalls'
 import { useAccountStore } from '@/stores/account'
 import { useBookings, type Booking as ApiBooking } from '@/composables/useBookings'
 import { useAccounts, type Account as ApiAccount } from '@/composables/useAccounts'
+import { useSettingsStore } from '@/stores/settings'
 
 const accountStore = useAccountStore()
+const settingsStore = useSettingsStore()
 
 const testwallsStore = useTestwallsStore()
 const { testwallsWithAvailability, bookings: testwallBookings } = storeToRefs(testwallsStore)
@@ -40,7 +42,13 @@ const selectedTestwallBookings = computed(() => {
 
 function formatTime(isoString: string): string {
   const d = new Date(isoString)
-  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+  if (settingsStore.use24HourTime) {
+    return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+  }
+  const h = d.getHours()
+  const ampm = h >= 12 ? 'PM' : 'AM'
+  const h12 = h % 12 || 12
+  return `${String(h12).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')} ${ampm}`
 }
 
 function getBookingsForDate(date: Date | null) {
@@ -341,11 +349,13 @@ const bookingend = ref(new Date(Date.now()))
                       placeholder="Search for Testwalls..."
                     >
                       <template #item="{ item }">
-                        <div class="flex items-center gap-3.5 py-1 px-2.5 w-full">
+                        <label
+                          :for="`testwall-${item.id}`"
+                          class="flex items-center gap-3.5 py-1 px-2.5 w-full cursor-pointer"
+                        >
                           <RadioButton
                             v-model="selectedRadioButton"
-                            ,
-                            :input-id="item.id"
+                            :input-id="`testwall-${item.id}`"
                             name="testwall"
                             :value="item.id"
                           />
@@ -356,7 +366,7 @@ const bookingend = ref(new Date(Date.now()))
                           <Tag v-if="item.isAvailable == false" severity="danger"
                             >Unavailable Now</Tag
                           >
-                        </div>
+                        </label>
                       </template>
                       <template #footer>
                         <div class="flex items-center justify-end gap-3 w-full">
@@ -411,7 +421,7 @@ const bookingend = ref(new Date(Date.now()))
                         v-model="bookingstart"
                         showIcon
                         showTime
-                        hourFormat="24"
+                        :hourFormat="settingsStore.use24HourTime ? '24' : '12'"
                         fluid
                         inputId="BookingStartPicker"
                         :min-date="new Date(Date.now())"
@@ -453,7 +463,7 @@ const bookingend = ref(new Date(Date.now()))
                         v-model="bookingend"
                         showIcon
                         showTime
-                        hourFormat="24"
+                        :hourFormat="settingsStore.use24HourTime ? '24' : '12'"
                         fluid
                         inputId="BookingEndPicker"
                         :min-date="bookingstart"
