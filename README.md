@@ -1,54 +1,155 @@
 # TestwallBooker
 
-This template should help get you started developing with Vue 3 in Vite.
+TestwallBooker is an internal booking and access platform for shared Testwall infrastructure. It gives teams one place to see which testwalls are available, reserve time slots, control who can book/use systems, and review booking and activity history.
 
-## Recommended IDE Setup
+## Purpose
 
-[VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+The project exists to solve a coordination problem across engineering teams:
 
-## Recommended Browser Setup
+1. Avoid testwall reservation conflicts.
+2. Make real-time availability visible to everyone.
+3. Control usage by role (admin, operator, user).
+4. Keep an audit trail of bookings and actions.
 
-- Chromium-based browsers (Chrome, Edge, Brave, etc.):
-  - [Vue.js devtools](https://chromewebstore.google.com/detail/vuejs-devtools/nhdogjmejiglipccpnnnanhbledajbpd)
-  - [Turn on Custom Object Formatter in Chrome DevTools](http://bit.ly/object-formatters)
-- Firefox:
-  - [Vue.js devtools](https://addons.mozilla.org/en-US/firefox/addon/vue-js-devtools/)
-  - [Turn on Custom Object Formatter in Firefox DevTools](https://fxdx.dev/firefox-devtools-custom-object-formatters/)
+## What The Application Does
 
-## Type Support for `.vue` Imports in TS
+1. Shows a live overview of testwall availability.
+2. Allows booking creation, conflict checks, updates, and termination.
+3. Supports user authentication and role-aware access.
+4. Stores accounts, access rights, testwalls, bookings, logs, and command history in MySQL.
+5. Exposes REST APIs under /api/* for frontend and integrations.
+6. Runs a Python sidecar process for testwall-related backend functionality.
 
-TypeScript cannot handle type information for `.vue` imports by default, so we replace the `tsc` CLI with `vue-tsc` for type checking. In editors, we need [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) to make the TypeScript language service aware of `.vue` types.
+## Where It Lives
 
-## Customize configuration
+1. Project/repository name: TestwallBooker
+2. Main codebase directories:
+   - src/ (Vue frontend)
+   - server/ (Express + MySQL backend)
+   - src/python/ (Python sidecar)
+   - deploy/ (deployment scripts and operations docs)
 
-See [Vite Configuration Reference](https://vite.dev/config/).
+If you are copying this into Confluence, add your internal Git URL in this section.
 
-## Project Setup
+## High-Level Architecture
+
+1. Frontend: Vue 3 + Vite + PrimeVue
+2. Backend: Node.js + Express + TypeScript (tsx runtime)
+3. Database: MySQL/MariaDB
+4. Sidecar: Python process started by backend at runtime
+5. Production routing: Nginx serves /booking and proxies /api to backend
+
+## Main API Areas
+
+1. /api/auth
+2. /api/accounts
+3. /api/access-rights
+4. /api/testwalls
+5. /api/bookings
+6. /api/history
+7. /api/logs
+
+## Local Development Setup
+
+### Prerequisites
+
+1. Node.js and npm
+2. MySQL or MariaDB running locally
+3. Python 3 available in PATH
+
+### 1) Install dependencies
 
 ```sh
 npm install
 ```
 
-## Deployment Docs
+### 2) Configure local environment
 
-1. General deployment workflow: `deploy/DEPLOY.md`
-2. Red Hat specific deployment notes: `deploy/DEPLOY-REDHAT.md`
-3. Full end-to-end setup from zero: `deploy/SETUP-FROM-SCRATCH.md`
+Create a .env file in the repository root:
 
-### Compile and Hot-Reload for Development
+```env
+DB_HOST=localhost
+DB_PORT=3306
+DB_USER=root
+DB_PASSWORD=
+DB_NAME=testwallbooker
+SERVER_PORT=3001
+NODE_ENV=development
+CORS_ORIGIN=http://localhost:5173
+PYTHON_CMD=python3
+```
+
+Notes:
+
+1. The backend auto-creates required tables on startup.
+2. The database itself must exist beforehand.
+
+### 3) Create local database
+
+```sql
+CREATE DATABASE IF NOT EXISTS testwallbooker CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+```
+
+### 4) Start backend and frontend
+
+Terminal 1:
+
+```sh
+npm run server
+```
+
+Terminal 2:
 
 ```sh
 npm run dev
 ```
 
-### Type-Check, Compile and Minify for Production
+### 5) Open locally
+
+1. Frontend: http://localhost:5173/booking/
+2. Backend health check example: http://localhost:3001/api/testwalls
+
+## Useful Commands
 
 ```sh
+npm run dev
+npm run server
 npm run build
-```
-
-### Lint with [ESLint](https://eslint.org/)
-
-```sh
+npm run type-check
 npm run lint
 ```
+
+## Troubleshooting Local Database Access
+
+If the app works on server but not locally, check these first:
+
+1. Verify backend is running and not exiting with DB init errors.
+2. Confirm local .env values point to your local DB, not server credentials.
+3. Confirm DB_NAME exists locally (testwallbooker by default).
+4. Confirm DB_USER/DB_PASSWORD are valid for local MySQL.
+5. Confirm MySQL is listening on the configured host/port.
+
+Quick verification:
+
+```sh
+mysql -h localhost -P 3306 -u root -p
+```
+
+Then run:
+
+```sql
+USE testwallbooker;
+SHOW TABLES;
+```
+
+If this works but backend still fails, restart backend and inspect startup logs from npm run server.
+
+## Deployment Documentation
+
+1. General deployment workflow: deploy/DEPLOY.md
+2. Red Hat specific deployment guide: deploy/DEPLOY-REDHAT.md
+3. Full from-scratch setup guide: deploy/SETUP-FROM-SCRATCH.md
+
+## Summary For Internal Consumers
+
+TestwallBooker is the internal source of truth for testwall availability, reservations, and access control. It reduces booking collisions, standardizes operations, and provides traceability for who used what and when.
