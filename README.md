@@ -29,6 +29,12 @@ See [Vite Configuration Reference](https://vite.dev/config/).
 npm install
 ```
 
+## Deployment Docs
+
+1. General deployment workflow: `deploy/DEPLOY.md`
+2. Red Hat specific deployment notes: `deploy/DEPLOY-REDHAT.md`
+3. Full end-to-end setup from zero: `deploy/SETUP-FROM-SCRATCH.md`
+
 ### Compile and Hot-Reload for Development
 
 ```sh

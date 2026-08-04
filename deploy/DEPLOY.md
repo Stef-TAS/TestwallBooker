@@ -1,144 +1,151 @@
-# Deployment Guide — c-l-twc-001
+# Deployment Guide
 
-## Architecture
+This is the current, working deployment flow for TestwallBooker.
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  c-l-twc-001                                                    │
-│                                                                 │
-│  Nginx (:80)                                                    │
-│  ├── /booking/        → static files                           │
-│  │                       /usr/share/nginx/html/booking/        │
-│  │                       (Vite dist/ output)                   │
-│  └── /booking/api/*   → proxy_pass → localhost:3001/api/*      │
-│                                                                 │
-│  Node.js / tsx  (:3001)                                         │
-│  ├── GET  /api/testwalls                                        │
-│  ├── POST /api/bookings                                         │
-│  ├── ...  (all existing /api/* routes unchanged)               │
-│  └── connects to MySQL (already running)                        │
-│                                                                 │
-│  MySQL (already running — phpMyAdmin available)                 │
-└─────────────────────────────────────────────────────────────────┘
+## Recommended script
+
+Use:
+
+```bash
+bash deploy/setup-and-deploy.sh user@host
 ```
 
-## Folder layout on the server
+This is the main script for real environments and includes:
 
-```
-/usr/share/nginx/html/
-├── index.html
-├── tw_api/html/
-│   ├── testwall-docs/
-│   ├── testwall-gui/
-│   └── spy2/testwall-spy/
-├── booking/                    ← NEW (Vite dist output)
-│   ├── index.html
-│   └── assets/
-└── test_1/
+1. SSH key bootstrap.
+2. Frontend build (or reuse existing dist/).
+3. Backend + static file sync.
+4. Offline dependency transfer for Linux node_modules.
+5. Nginx config + SELinux/firewall adjustments.
+6. systemd restart + health checks.
 
-/opt/testwallbooker/            ← NEW (Node.js backend)
-├── server/
-├── src/python/
-├── package.json
-├── package-lock.json
-└── .env                        ← production secrets (not in git)
-```
+## Important environment assumptions
 
----
+1. The server may not have internet access.
+2. Node/Python/NGINX/systemd must already be installed on the server.
+3. Dependency downloads happen on the laptop, then are copied to the server.
+4. The script requires sudo access on the target host.
 
-## One-time server setup (do this once, as root)
+## Current runtime architecture
 
-### 1. Create MySQL database and user
+1. Frontend static files:
+   - /usr/share/nginx/html/booking
+2. Backend app:
+   - /opt/testwallbooker
+3. Nginx API proxy:
+   - /api/* and /booking/api/* -> http://127.0.0.1:3001/api/*
+4. Backend service name:
+   - testwallbooker
+
+## One-time server setup checklist
+
+Do this once on the server:
+
+1. Create database + user.
+2. Create /opt/testwallbooker/.env using deploy/.env.production.example.
+3. Ensure the deploy SSH user can run sudo.
+4. Ensure Nginx is enabled and running.
+
+Example DB SQL:
 
 ```sql
--- Run in phpMyAdmin or mysql CLI
 CREATE DATABASE IF NOT EXISTS testwallbooker CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 CREATE USER IF NOT EXISTS 'testwallbooker'@'localhost' IDENTIFIED BY '<strong_password>';
 GRANT ALL PRIVILEGES ON testwallbooker.* TO 'testwallbooker'@'localhost';
 FLUSH PRIVILEGES;
 ```
 
-### 2. Install Node.js (v20 LTS recommended)
+Example .env:
 
-```bash
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-sudo apt-get install -y nodejs
+```env
+DB_HOST=localhost
+DB_PORT=3306
+DB_USER=testwallbooker
+DB_PASSWORD=<strong_password_here>
+DB_NAME=testwallbooker
+SERVER_PORT=3001
+NODE_ENV=production
 ```
 
-### 3. Install Python 3 + dependencies (for the Python sub-process)
+## Deploy command
+
+From repository root:
 
 ```bash
-sudo apt-get install -y python3 python3-pip
-# After deploying the backend files:
-pip3 install -r /opt/testwallbooker/src/python/requirements.txt
+bash deploy/setup-and-deploy.sh user@host
 ```
 
-### 4. Create the backend environment file
+## Verification commands
+
+On the server:
 
 ```bash
-sudo mkdir -p /opt/testwallbooker
-sudo cp /path/to/deploy/.env.production.example /opt/testwallbooker/.env
-sudo nano /opt/testwallbooker/.env   # fill in real values
-sudo chmod 600 /opt/testwallbooker/.env
+systemctl status testwallbooker --no-pager -l
+journalctl -u testwallbooker -n 120 --no-pager
+curl -I http://127.0.0.1/booking/
+curl -I http://127.0.0.1/api/testwalls
 ```
 
-### 5. Install the systemd service
+From a browser:
+
+1. http://<host>/booking/
+2. Login page and API calls should no longer return 502.
+
+## Known issues and fixes
+
+### 1) Login error: Unexpected token '<' ... not valid JSON
+
+Cause:
+API call returned HTML (usually Nginx 502 page).
+
+Fix:
+
+1. Check backend service:
+   - systemctl status testwallbooker
+2. Check backend direct endpoint:
+   - curl http://127.0.0.1:3001/api/testwalls
+
+### 2) Service crash: status=209/STDOUT / Failed at step STDOUT
+
+Cause:
+systemd stdout/stderr file redirection permissions.
+
+Fix:
+
+1. Use current setup-and-deploy script version (it does not set StandardOutput/StandardError append targets).
+2. Reload and restart service:
 
 ```bash
-sudo cp /path/to/deploy/testwallbooker.service /etc/systemd/system/
 sudo systemctl daemon-reload
-sudo systemctl enable testwallbooker
-```
-
-### 6. Add Nginx location blocks
-
-Edit the active Nginx server block (usually `/etc/nginx/sites-available/default`
-or `/etc/nginx/conf.d/default.conf`) and paste the contents of
-`deploy/nginx-booking.conf` **inside the `server { }` block**.
-
-```bash
-sudo nano /etc/nginx/sites-available/default
-# paste contents of deploy/nginx-booking.conf inside server { ... }
-
-sudo nginx -t          # verify config
-sudo systemctl reload nginx
-```
-
----
-
-## Deploying updates
-
-From your **developer machine** (after `git pull` / changes):
-
-```bash
-bash deploy/deploy.sh your_user@c-l-twc-001
-```
-
-This script:
-
-1. Builds the Vite frontend (`npm run build`)
-2. Rsyncs `dist/` → `/usr/share/nginx/html/booking/` on the server
-3. Rsyncs the `server/` and `src/python/` directories to `/opt/testwallbooker/`
-4. Runs `npm ci --omit=dev` on the server
-5. Restarts the systemd service
-
----
-
-## Starting / stopping the backend manually
-
-```bash
-sudo systemctl start   testwallbooker
-sudo systemctl stop    testwallbooker
 sudo systemctl restart testwallbooker
-sudo systemctl status  testwallbooker
-journalctl -u testwallbooker -f   # live logs
 ```
 
----
+### 3) Service crash: esbuild EACCES
 
-## Verification
+Cause:
+executable bits lost on node_modules binaries during cross-platform copy.
+
+Fix:
+
+1. Use current setup-and-deploy script version (it reapplies executable permissions in node_modules).
+2. Manual hotfix if needed:
 
 ```bash
-curl http://c-l-twc-001/booking/           # should return index.html
-curl http://c-l-twc-001/booking/api/testwalls  # should return JSON
+sudo chmod 755 /opt/testwallbooker/node_modules/.bin/* || true
+sudo find /opt/testwallbooker/node_modules -type f -path '*/bin/*' -exec chmod 755 {} +
+sudo systemctl restart testwallbooker
 ```
+
+### 4) Local dev won't start (npm run dev)
+
+Cause:
+broken local node_modules (invalid/missing vite or npm-run-all2).
+
+Fix:
+
+```bash
+npm install
+npm run dev
+```
+
+If port 5173 is in use, Vite will pick another port automatically.
