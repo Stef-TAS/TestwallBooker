@@ -1,5 +1,6 @@
 <script lang="ts" setup>
-import { DatePicker, Fieldset, Select, Tag } from 'primevue'
+import { DatePicker, Fieldset, Select, Tag, Toast } from 'primevue'
+import { useToast } from 'primevue/usetoast'
 import Stepper from 'primevue/stepper'
 import StepList from 'primevue/steplist'
 import StepPanels from 'primevue/steppanels'
@@ -135,7 +136,8 @@ type BookingHistoryUserOption = {
   value: number
 }
 
-const { getBookingsByUser, terminateBooking } = useBookings()
+const { getBookingsByUser, terminateBooking, createBooking } = useBookings()
+const toast = useToast()
 const { getAllAccounts } = useAccounts()
 const bookings = ref<BookingHistory[]>([])
 const userOptions = ref<BookingHistoryUserOption[]>([])
@@ -247,12 +249,50 @@ watch(selectedHistoryUserId, () => {
 
 const canTerminateBooking = (booking: BookingHistory) => booking.status === 'active'
 
-const selectedRadioButton = ref()
+const selectedRadioButton = ref<number | undefined>()
+const isSubmittingBooking = ref(false)
+
+const selectedTestwall = computed(
+  () => testwallsWithAvailability.value.find((t) => t.id === selectedRadioButton.value) ?? null,
+)
 
 const bookingstart = ref(new Date(Date.now()))
 const bookingend = ref(new Date(Date.now()))
+
+async function handleFinishBooking() {
+  if (!selectedRadioButton.value || !accountStore.account?.id) return
+  isSubmittingBooking.value = true
+  try {
+    const result = await createBooking(
+      selectedRadioButton.value,
+      accountStore.account.id,
+      bookingstart.value.toISOString(),
+      bookingend.value.toISOString(),
+    )
+    if (result) {
+      toast.add({
+        severity: 'success',
+        summary: 'Booking Confirmed',
+        detail: `Your booking for ${selectedTestwall.value?.name ?? 'the testwall'} has been successfully added.`,
+        life: 5000,
+      })
+      await loadTestwalls()
+      await loadBookings()
+    } else {
+      toast.add({
+        severity: 'error',
+        summary: 'Booking Failed',
+        detail: 'Could not create the booking. Please try again.',
+        life: 5000,
+      })
+    }
+  } finally {
+    isSubmittingBooking.value = false
+  }
+}
 </script>
 <template>
+  <Toast />
   <Card class="relative overflow-hidden border border-blue-500/20 shadow-xl mb-6">
     <template #content>
       <div class="absolute -top-24 -right-16 h-48 w-48 rounded-full bg-blue-500/15 blur-2xl" />
@@ -537,11 +577,11 @@ const bookingend = ref(new Date(Date.now()))
                       <div class="flex flex-col text-sm p-2">
                         <div class="flex justify-between">
                           <span class="text-color">Username</span>
-                          <span class="text-muted-color">User</span>
+                          <span class="text-muted-color">{{ accountStore.account?.username }}</span>
                         </div>
                         <div class="flex justify-between">
                           <span class="text-color">Email</span>
-                          <span class="text-muted-color">User@ttcontrol.com</span>
+                          <span class="text-muted-color">{{ accountStore.account?.email }}</span>
                         </div>
                       </div>
                     </Fieldset>
@@ -549,25 +589,31 @@ const bookingend = ref(new Date(Date.now()))
                       <div class="flex flex-col text-sm p-2">
                         <div class="flex justify-between">
                           <span class="text-color">Selected Testwall</span>
-                          <span class="text-color">Testwall 2</span>
+                          <span class="text-muted-color">{{ selectedTestwall?.name ?? '—' }}</span>
                         </div>
                         <div class="flex justify-between">
-                          <span class="text-muted-color">Current Status</span>
-                          <Tag severity="success">Available</Tag>
+                          <span class="text-color">Current Status</span>
+                          <Tag v-if="selectedTestwall?.isAvailable" severity="success"
+                            >Available</Tag
+                          >
+                          <Tag
+                            v-else-if="selectedTestwall?.availabilityStatus === 'out_of_service'"
+                            severity="secondary"
+                            >Out of Service</Tag
+                          >
+                          <Tag v-else severity="danger">Unavailable</Tag>
                         </div>
                       </div>
                     </Fieldset>
                     <Fieldset legend="Selected TimeFrame" class="w-full">
                       <div class="flex flex-col text-sm p-2">
-                        <div class="flex justify-between">
-                          <span class="text-color">Startdate</span>
-                          <span class="text-muted-color">Enddate</span>
+                        <div class="flex justify-between mb-1">
+                          <span class="text-color font-medium">Start</span>
+                          <span class="text-muted-color">{{ bookingstart.toLocaleString() }}</span>
                         </div>
                         <div class="flex justify-between">
-                          <span class="text-color">{{ bookingstart.toLocaleDateString() }}</span>
-                          <span class="text-muted-color">{{
-                            bookingend.toLocaleDateString()
-                          }}</span>
+                          <span class="text-color font-medium">End</span>
+                          <span class="text-muted-color">{{ bookingend.toLocaleString() }}</span>
                         </div>
                       </div>
                     </Fieldset>
@@ -577,7 +623,11 @@ const bookingend = ref(new Date(Date.now()))
                       <ArrowLeft />
                       Back
                     </Button>
-                    <Button @click="">
+                    <Button
+                      @click="handleFinishBooking"
+                      :loading="isSubmittingBooking"
+                      :disabled="isSubmittingBooking"
+                    >
                       Finish Booking
                       <ArrowRight />
                     </Button>
@@ -592,7 +642,10 @@ const bookingend = ref(new Date(Date.now()))
   </div>
   <div>
     <Fieldset legend="Booking History" class="max-w-4/5 w-full justify-self-center">
-      <div v-if="canManageHistory" class="mb-4 flex flex-col gap-2 md:max-w-xl">
+      <div
+        v-if="accountStore.account?.isAdmin && accountStore.showAdminContent"
+        class="mb-4 flex flex-col gap-2 md:max-w-xl"
+      >
         <label for="booking-history-user-select" class="text-sm font-medium">History User</label>
         <Select
           inputId="booking-history-user-select"
@@ -620,14 +673,14 @@ const bookingend = ref(new Date(Date.now()))
         <Column field="id" header="BookingId" sortable />
         <Column field="testwallId" header="TestwallId" sortable />
         <Column field="testwallName" header="Testwall" sortable />
-        <Column field="startDate" header="StartDate  (mm/dd/yyyy)" sortable>
+        <Column field="startDate" header="Start Date" sortable>
           <template #body="{ data }">
-            <p>{{ data.startDate.toLocaleDateString() }}</p>
+            <p>{{ data.startDate.toLocaleString() }}</p>
           </template>
         </Column>
-        <Column field="endDate" header="EndDate  (mm/dd/yyyy)" sortable>
+        <Column field="endDate" header="End Date" sortable>
           <template #body="{ data }">
-            <p>{{ data.endDate.toLocaleDateString() }}</p>
+            <p>{{ data.endDate.toLocaleString() }}</p>
           </template>
         </Column>
         <Column field="status" header="Status" sortable>

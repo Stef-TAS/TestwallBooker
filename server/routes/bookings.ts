@@ -4,6 +4,12 @@ import type { Request, Response } from 'express'
 
 const router = Router()
 
+function toMysqlDatetime(value: string): string {
+  const d = new Date(value)
+  if (isNaN(d.getTime())) return value
+  return d.toISOString().slice(0, 19).replace('T', ' ')
+}
+
 export async function reconcileRecentBookings() {
   const [deletedResult] = await pool.execute(
     `DELETE FROM bookings
@@ -72,12 +78,15 @@ router.post('/check-availability', async (req: Request, res: Response) => {
     return
   }
 
+  const fromMysql = toMysqlDatetime(from_time as string)
+  const toMysql = toMysqlDatetime(to_time as string)
+
   const [rows] = await pool.execute(
     `SELECT COUNT(*) as count FROM bookings 
      WHERE testwall_id = ? 
      AND from_time < ? 
      AND to_time > ?`,
-    [testwall_id, to_time, from_time],
+    [testwall_id, toMysql, fromMysql],
   )
 
   const isAvailable = (rows as any[])[0].count === 0
@@ -93,6 +102,8 @@ router.post('/', async (req: Request, res: Response) => {
   }
 
   const normalizedStatus = typeof status === 'string' && status.trim() ? status.trim() : 'active'
+  const fromMysql = toMysqlDatetime(from_time as string)
+  const toMysql = toMysqlDatetime(to_time as string)
 
   // Check availability
   const [conflicts] = await pool.execute(
@@ -100,7 +111,7 @@ router.post('/', async (req: Request, res: Response) => {
      WHERE testwall_id = ? 
      AND from_time < ? 
      AND to_time > ?`,
-    [testwall_id, to_time, from_time],
+    [testwall_id, toMysql, fromMysql],
   )
 
   if ((conflicts as any[])[0].count > 0) {
@@ -110,7 +121,7 @@ router.post('/', async (req: Request, res: Response) => {
 
   await pool.execute(
     'INSERT INTO bookings (testwall_id, user_id, from_time, to_time, status) VALUES (?, ?, ?, ?, ?)',
-    [testwall_id, user_id, from_time, to_time, normalizedStatus],
+    [testwall_id, user_id, fromMysql, toMysql, normalizedStatus],
   )
   const [result] = await pool.execute('SELECT LAST_INSERT_ID() as id')
   res.status(201).json({ ...(result as any[])[0], status: normalizedStatus })
@@ -126,12 +137,12 @@ router.put('/:id', async (req: Request, res: Response) => {
 
   if (from_time !== undefined) {
     updates.push('from_time = ?')
-    values.push(from_time)
+    values.push(toMysqlDatetime(from_time as string))
   }
 
   if (to_time !== undefined) {
     updates.push('to_time = ?')
-    values.push(to_time)
+    values.push(toMysqlDatetime(to_time as string))
   }
 
   if (status !== undefined) {
