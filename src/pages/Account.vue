@@ -382,8 +382,8 @@ function handleLogout() {
   </Card>
 
   <div>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <Fieldset legend="Account information" class="w-full h-full shadow-lg">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+      <Fieldset legend="Account information" class="w-full shadow-lg">
         <div class="flex flex-col text-sm p-2">
           <div class="flex justify-between">
             <span class="text-color">Username</span>
@@ -423,15 +423,79 @@ function handleLogout() {
             <span class="text-color">Timezone</span>
             <span class="text-muted-color">{{ accountStore.account?.timezone }}</span>
           </div>
+
+          <template v-if="accountStore.account?.isAdmin && accountStore.showAdminContent">
+            <Divider />
+            <p class="text-xs font-semibold uppercase tracking-wider text-muted-color mb-1">
+              Server Status
+            </p>
+            <p class="text-sm text-muted-color">Status is loaded once when this page opens.</p>
+
+            <div class="grid grid-cols-1 gap-3">
+              <div class="flex items-center justify-between rounded-lg border px-3 py-2">
+                <span class="text-sm font-medium">Database Server</span>
+                <Tag :severity="databaseTagSeverity">
+                  {{
+                    serverStatusLoading
+                      ? 'Checking...'
+                      : databaseStatus?.running
+                        ? 'Running'
+                        : 'Down'
+                  }}
+                </Tag>
+              </div>
+
+              <p
+                v-if="
+                  !serverStatusLoading &&
+                  databaseStatus &&
+                  !databaseStatus.running &&
+                  databaseStatus.error
+                "
+                class="text-xs text-red-400"
+              >
+                Database error: {{ databaseStatus.error }}
+              </p>
+
+              <div class="flex items-center justify-between rounded-lg border px-3 py-2">
+                <span class="text-sm font-medium">Python Server</span>
+                <Tag :severity="pythonTagSeverity">
+                  {{
+                    serverStatusLoading ? 'Checking...' : pythonStatus?.running ? 'Running' : 'Down'
+                  }}
+                </Tag>
+              </div>
+
+              <p
+                v-if="
+                  !serverStatusLoading &&
+                  pythonStatus &&
+                  !pythonStatus.running &&
+                  pythonStatus.error
+                "
+                class="text-xs text-red-400"
+              >
+                Python error: {{ pythonStatus.error }}
+              </p>
+            </div>
+
+            <p v-if="serverStatusError" class="text-xs text-red-400">
+              Could not fetch status: {{ serverStatusError }}
+            </p>
+
+            <p v-if="formattedStatusCheckedAt" class="text-xs text-muted-color">
+              Checked at: {{ formattedStatusCheckedAt }}
+            </p>
+          </template>
         </div>
       </Fieldset>
       <Fieldset legend="Settings" class="w-full h-full shadow-lg">
         <div class="flex flex-col text-sm p-2">
-          <div class="flex items-start gap-4">
+          <div class="flex flex-col sm:flex-row items-start gap-4">
             <img
               :src="currentProfilePicture"
               alt="profile picture"
-              class="rounded-xl shadow-lg w-2/5 object-cover shrink-0"
+              class="rounded-xl shadow-lg w-full sm:w-2/5 object-cover shrink-0"
             />
             <div class="flex flex-col gap-2 flex-1">
               <FileUpload
@@ -598,6 +662,7 @@ function handleLogout() {
           @click="handleLogout"
         />
       </Fieldset>
+
       <!-- Admin Section: Add New User -->
       <Fieldset
         v-if="accountStore.account?.isAdmin && accountStore.showAdminContent"
@@ -605,7 +670,7 @@ function handleLogout() {
         class="w-full h-full shadow-lg"
       >
         <div class="flex flex-col gap-4 p-2">
-          <div class="grid grid-cols-2 gap-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label class="block text-sm mb-1">Username *</label>
               <InputText
@@ -625,7 +690,7 @@ function handleLogout() {
             </div>
           </div>
 
-          <div class="grid grid-cols-2 gap-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label class="block text-sm mb-1">Password *</label>
               <InputText
@@ -649,7 +714,7 @@ function handleLogout() {
 
           <Divider />
 
-          <div class="grid grid-cols-2 gap-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label class="block text-sm mb-1">First Name</label>
               <InputText
@@ -668,7 +733,7 @@ function handleLogout() {
             </div>
           </div>
 
-          <div class="grid grid-cols-2 gap-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label class="block text-sm mb-1">Location</label>
               <InputText
@@ -702,97 +767,39 @@ function handleLogout() {
         legend="Admin: Manage Users"
         class="w-full h-full shadow-lg"
       >
-        <DataTable
-          :value="allUsers"
-          paginator
-          :rows="settingsStore.compactView ? 15 : 10"
-          :rowsPerPageOptions="[5, 10, 25]"
-          :size="settingsStore.compactView ? 'small' : undefined"
-          v-model:filters="userFilters"
-          :globalFilterFields="['username', 'email', 'firstName', 'lastName']"
-          filterDisplay="menu"
-          class="w-full"
-        >
-          <template #header>
-            <div class="flex justify-end">
-              <InputText
-                v-model="userFilters['global'].value"
-                placeholder="Search users..."
-                class="w-64"
-              />
-            </div>
-          </template>
-          <template #empty>No users found.</template>
-          <Column field="username" header="Username" sortable />
-          <Column field="email" header="Email" sortable />
-          <Column header="Name">
-            <template #body="{ data }"> {{ data.firstName }} {{ data.lastName }} </template>
-          </Column>
-          <Column header="Actions" style="width: 6rem">
-            <template #body="{ data }">
-              <Button size="small" label="Modify" @click="openModifyModal(data)" />
+        <div class="max-w-full overflow-x-auto">
+          <DataTable
+            :value="allUsers"
+            paginator
+            :rows="settingsStore.compactView ? 15 : 10"
+            :rowsPerPageOptions="[5, 10, 25]"
+            :size="settingsStore.compactView ? 'small' : undefined"
+            v-model:filters="userFilters"
+            :globalFilterFields="['username', 'email', 'firstName', 'lastName']"
+            filterDisplay="menu"
+            class="w-full min-w-max"
+          >
+            <template #header>
+              <div class="flex justify-end">
+                <InputText
+                  v-model="userFilters['global'].value"
+                  placeholder="Search users..."
+                  class="w-full max-w-64"
+                />
+              </div>
             </template>
-          </Column>
-        </DataTable>
-      </Fieldset>
-
-      <!-- Admin Section: Server Status -->
-      <Fieldset
-        v-if="accountStore.account?.isAdmin && accountStore.showAdminContent"
-        legend="Admin: Server Status"
-        class="w-full h-full shadow-lg"
-      >
-        <div class="flex flex-col gap-4 p-2">
-          <p class="text-sm text-muted-color">Status is loaded once when this page opens.</p>
-
-          <div class="grid grid-cols-1 gap-3">
-            <div class="flex items-center justify-between rounded-lg border px-3 py-2">
-              <span class="text-sm font-medium">Database Server</span>
-              <Tag :severity="databaseTagSeverity">
-                {{
-                  serverStatusLoading ? 'Checking...' : databaseStatus?.running ? 'Running' : 'Down'
-                }}
-              </Tag>
-            </div>
-
-            <p
-              v-if="
-                !serverStatusLoading &&
-                databaseStatus &&
-                !databaseStatus.running &&
-                databaseStatus.error
-              "
-              class="text-xs text-red-400"
-            >
-              Database error: {{ databaseStatus.error }}
-            </p>
-
-            <div class="flex items-center justify-between rounded-lg border px-3 py-2">
-              <span class="text-sm font-medium">Python Server</span>
-              <Tag :severity="pythonTagSeverity">
-                {{
-                  serverStatusLoading ? 'Checking...' : pythonStatus?.running ? 'Running' : 'Down'
-                }}
-              </Tag>
-            </div>
-
-            <p
-              v-if="
-                !serverStatusLoading && pythonStatus && !pythonStatus.running && pythonStatus.error
-              "
-              class="text-xs text-red-400"
-            >
-              Python error: {{ pythonStatus.error }}
-            </p>
-          </div>
-
-          <p v-if="serverStatusError" class="text-xs text-red-400">
-            Could not fetch status: {{ serverStatusError }}
-          </p>
-
-          <p v-if="formattedStatusCheckedAt" class="text-xs text-muted-color">
-            Checked at: {{ formattedStatusCheckedAt }}
-          </p>
+            <template #empty>No users found.</template>
+            <Column field="username" header="Username" sortable />
+            <Column field="email" header="Email" sortable />
+            <Column header="Name">
+              <template #body="{ data }"> {{ data.firstName }} {{ data.lastName }} </template>
+            </Column>
+            <Column header="Actions" style="width: 6rem">
+              <template #body="{ data }">
+                <Button size="small" label="Modify" @click="openModifyModal(data)" />
+              </template>
+            </Column>
+          </DataTable>
         </div>
       </Fieldset>
 
@@ -801,7 +808,8 @@ function handleLogout() {
         v-model:visible="modifyModalVisible"
         modal
         header="Modify User"
-        class="w-full max-w-lg"
+        class="w-[42rem] max-w-[96vw]"
+        :breakpoints="{ '960px': '92vw', '640px': '96vw' }"
       >
         <div v-if="editingUser" class="flex flex-col gap-4">
           <div class="text-sm opacity-60">
@@ -809,7 +817,7 @@ function handleLogout() {
           </div>
           <Divider />
 
-          <div class="grid grid-cols-2 gap-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label class="block text-sm mb-1">First Name</label>
               <InputText v-model="editUserForm.firstName" class="w-full" />
@@ -819,7 +827,7 @@ function handleLogout() {
               <InputText v-model="editUserForm.lastName" class="w-full" />
             </div>
           </div>
-          <div class="grid grid-cols-2 gap-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label class="block text-sm mb-1">Location</label>
               <InputText v-model="editUserForm.location" class="w-full" />
@@ -846,7 +854,7 @@ function handleLogout() {
           </div>
 
           <Divider />
-          <div class="flex justify-between gap-2">
+          <div class="flex flex-col sm:flex-row sm:justify-between gap-2">
             <Button
               label="Delete User"
               severity="danger"
@@ -854,7 +862,7 @@ function handleLogout() {
               @click="handleDeleteUser"
               :loading="accountsLoading"
             />
-            <div class="flex gap-2">
+            <div class="flex flex-col sm:flex-row gap-2">
               <Button label="Cancel" severity="secondary" @click="modifyModalVisible = false" />
               <Button label="Save Changes" @click="handleUpdateUser" :loading="accountsLoading" />
             </div>

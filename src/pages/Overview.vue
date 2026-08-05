@@ -83,7 +83,7 @@ onUnmounted(() => stopRefresh())
       </div>
     </template>
   </Card>
-  <div>
+  <div class="max-w-full overflow-x-auto">
     <p v-if="isOverviewLoading">Loading data...</p>
     <p v-else-if="overviewLoadError">Failed to load data: {{ overviewLoadError }}</p>
     <DataTable
@@ -94,7 +94,7 @@ onUnmounted(() => stopRefresh())
       :rowsPerPageOptions="[5, 10, 20, 50]"
       :size="settingsStore.compactView ? 'small' : undefined"
       stripedRows
-      class="shadow-xl"
+      class="shadow-xl min-w-max"
     >
       <Column field="id" header="ID" sortable />
       <Column field="name" header="Testwall" sortable />
