@@ -76,6 +76,68 @@ const editUserPermissions = ref<AccessRight[]>([])
 const selectedEditPermission = ref<AccessRight | null>(null)
 const editUserForm = ref({ firstName: '', lastName: '', location: '', timezone: '' })
 
+type ServiceStatus = {
+  running: boolean
+  error?: string
+}
+
+const serverStatusLoading = ref(false)
+const serverStatusError = ref<string | null>(null)
+const databaseStatus = ref<ServiceStatus | null>(null)
+const pythonStatus = ref<ServiceStatus | null>(null)
+const statusCheckedAt = ref<string | null>(null)
+
+async function loadSystemStatus() {
+  if (!accountStore.account?.isAdmin) {
+    return
+  }
+
+  serverStatusLoading.value = true
+  serverStatusError.value = null
+
+  try {
+    const res = await fetch('/api/system/status')
+    if (!res.ok) {
+      throw new Error(`Status request failed (${res.status})`)
+    }
+
+    const data = (await res.json()) as {
+      database?: ServiceStatus
+      python?: ServiceStatus
+      checkedAt?: string
+    }
+
+    databaseStatus.value = data.database ?? null
+    pythonStatus.value = data.python ?? null
+    statusCheckedAt.value = data.checkedAt ?? null
+  } catch (error) {
+    serverStatusError.value =
+      error instanceof Error ? error.message : 'Failed to load server status'
+    databaseStatus.value = null
+    pythonStatus.value = null
+    statusCheckedAt.value = null
+  } finally {
+    serverStatusLoading.value = false
+  }
+}
+
+const databaseTagSeverity = computed(() => {
+  if (!databaseStatus.value) return 'secondary'
+  return databaseStatus.value.running ? 'success' : 'danger'
+})
+
+const pythonTagSeverity = computed(() => {
+  if (!pythonStatus.value) return 'secondary'
+  return pythonStatus.value.running ? 'success' : 'danger'
+})
+
+const formattedStatusCheckedAt = computed(() => {
+  if (!statusCheckedAt.value) return ''
+  const parsed = new Date(statusCheckedAt.value)
+  if (Number.isNaN(parsed.getTime())) return statusCheckedAt.value
+  return parsed.toLocaleString()
+})
+
 async function loadAllUsers() {
   allUsers.value = await getAllAccounts()
 }
@@ -157,8 +219,12 @@ const currentProfilePicture = computed(() => {
 })
 
 onMounted(async () => {
-  availablePermissions.value = await getAllAccessRights()
-  await loadAllUsers()
+  await loadSystemStatus()
+
+  if (accountStore.account?.isAdmin) {
+    availablePermissions.value = await getAllAccessRights()
+    await loadAllUsers()
+  }
 })
 
 async function handleProfilePictureChange(event: FileUploadSelectEvent) {
@@ -668,6 +734,66 @@ function handleLogout() {
             </template>
           </Column>
         </DataTable>
+      </Fieldset>
+
+      <!-- Admin Section: Server Status -->
+      <Fieldset
+        v-if="accountStore.account?.isAdmin && accountStore.showAdminContent"
+        legend="Admin: Server Status"
+        class="w-full h-full shadow-lg"
+      >
+        <div class="flex flex-col gap-4 p-2">
+          <p class="text-sm text-muted-color">Status is loaded once when this page opens.</p>
+
+          <div class="grid grid-cols-1 gap-3">
+            <div class="flex items-center justify-between rounded-lg border px-3 py-2">
+              <span class="text-sm font-medium">Database Server</span>
+              <Tag :severity="databaseTagSeverity">
+                {{
+                  serverStatusLoading ? 'Checking...' : databaseStatus?.running ? 'Running' : 'Down'
+                }}
+              </Tag>
+            </div>
+
+            <p
+              v-if="
+                !serverStatusLoading &&
+                databaseStatus &&
+                !databaseStatus.running &&
+                databaseStatus.error
+              "
+              class="text-xs text-red-400"
+            >
+              Database error: {{ databaseStatus.error }}
+            </p>
+
+            <div class="flex items-center justify-between rounded-lg border px-3 py-2">
+              <span class="text-sm font-medium">Python Server</span>
+              <Tag :severity="pythonTagSeverity">
+                {{
+                  serverStatusLoading ? 'Checking...' : pythonStatus?.running ? 'Running' : 'Down'
+                }}
+              </Tag>
+            </div>
+
+            <p
+              v-if="
+                !serverStatusLoading && pythonStatus && !pythonStatus.running && pythonStatus.error
+              "
+              class="text-xs text-red-400"
+            >
+              Python error: {{ pythonStatus.error }}
+            </p>
+          </div>
+
+          <p v-if="serverStatusError" class="text-xs text-red-400">
+            Could not fetch status: {{ serverStatusError }}
+          </p>
+
+          <p v-if="formattedStatusCheckedAt" class="text-xs text-muted-color">
+            Checked at: {{ formattedStatusCheckedAt }}
+          </p>
+        </div>
       </Fieldset>
 
       <!-- Modify User Dialog -->
