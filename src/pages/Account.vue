@@ -466,17 +466,23 @@ function handleLogout() {
                 </Tag>
               </div>
 
-              <p
+              <div
                 v-if="
                   !serverStatusLoading &&
                   pythonStatus &&
                   !pythonStatus.running &&
                   pythonStatus.error
                 "
-                class="text-xs text-red-400"
+                class="flex flex-col gap-1"
               >
-                Python error: {{ pythonStatus.error }}
-              </p>
+                <span class="text-xs text-red-400">Python error:</span>
+                <InputText
+                  :value="pythonStatus.error"
+                  readonly
+                  class="text-xs font-mono w-full"
+                  :pt="{ root: { class: 'text-red-400! border-red-500/30!' } }"
+                />
+              </div>
             </div>
 
             <p v-if="serverStatusError" class="text-xs text-red-400">

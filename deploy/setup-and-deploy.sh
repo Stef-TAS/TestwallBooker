@@ -236,13 +236,33 @@ prepare_offline_dependencies() {
   fi
 
   if [[ -z "$local_pip" ]]; then
-    warn "No usable local pip found; skipping wheel bundle."
+    warn "No usable local pip found; trying Docker to download wheels..."
+    if _download_wheels_via_docker; then
+      ok "Prepared offline Python wheel bundle via Docker"
+      return
+    fi
+    warn "Docker unavailable; trying Node.js to download wheels from PyPI..."
+    if _download_wheels_via_node; then
+      ok "Prepared offline Python wheel bundle via Node.js"
+      return
+    fi
+    warn "All wheel download methods failed; skipping wheel bundle."
     SKIP_PYTHON_WHEELS=1
     return
   fi
 
   if ! eval "$local_pip download --dest '$LOCAL_PY_WHEEL_DIR' --only-binary=:all: --platform manylinux2014_x86_64 --implementation cp --python-version '$REMOTE_PYTHON_TAG' --requirement src/python/requirements.txt"; then
-    warn "Python wheel download failed; skipping wheel bundle."
+    warn "Python wheel download failed; trying Docker fallback..."
+    if _download_wheels_via_docker; then
+      ok "Prepared offline Python wheel bundle via Docker"
+      return
+    fi
+    warn "Docker unavailable; trying Node.js to download wheels from PyPI..."
+    if _download_wheels_via_node; then
+      ok "Prepared offline Python wheel bundle via Node.js"
+      return
+    fi
+    warn "All wheel download methods failed; skipping wheel bundle."
     SKIP_PYTHON_WHEELS=1
     return
   fi
@@ -254,6 +274,212 @@ prepare_offline_dependencies() {
   fi
 
   ok "Prepared offline Python wheel bundle"
+}
+
+_download_wheels_via_docker() {
+  if ! command -v docker >/dev/null 2>&1 || ! docker info >/dev/null 2>&1; then
+    warn "Docker is not available or not running; cannot use Docker for wheel download."
+    return 1
+  fi
+
+  info "Using Docker (python:3.${REMOTE_PYTHON_TAG: -2}) to download Linux wheels..."
+  local abs_wheel_dir
+  abs_wheel_dir="$(pwd)/${LOCAL_PY_WHEEL_DIR}"
+  local abs_req
+  abs_req="$(pwd)/src/python/requirements.txt"
+
+  mkdir -p "$abs_wheel_dir"
+
+  docker run --rm \
+    -v "${abs_wheel_dir}:/wheels" \
+    -v "${abs_req}:/requirements.txt:ro" \
+    "python:3.${REMOTE_PYTHON_TAG: -2}-slim" \
+    pip download \
+      --dest /wheels \
+      --only-binary=:all: \
+      --platform manylinux2014_x86_64 \
+      --implementation cp \
+      --python-version "${REMOTE_PYTHON_TAG}" \
+      -r /requirements.txt
+
+  if ls "$abs_wheel_dir"/*.whl >/dev/null 2>&1; then
+    return 0
+  else
+    return 1
+  fi
+}
+
+_download_wheels_via_node() {
+  if ! command -v node >/dev/null 2>&1; then
+    warn "Node.js not available; cannot download wheels."
+    return 1
+  fi
+
+  info "Using Node.js to fetch wheels from PyPI (resolves transitive deps)..."
+  local wheel_dir="${LOCAL_PY_WHEEL_DIR}"
+  local req_file="src/python/requirements.txt"
+  mkdir -p "$wheel_dir"
+
+  node - "$wheel_dir" "$req_file" "$REMOTE_PYTHON_TAG" << 'NODESCRIPT'
+const https = require('https');
+const http  = require('http');
+const fs    = require('fs');
+const path  = require('path');
+
+const [wheelDir, reqFile, pyTag] = process.argv.slice(2);
+// pyTag is e.g. "39" (Python 3.9) or "310" (Python 3.10)
+const PY_MAJOR = parseInt(pyTag.charAt(0), 10);  // always 3
+const PY_MINOR = parseInt(pyTag.slice(1), 10);   // 9, 10, 11 ...
+
+function get(url) {
+  return new Promise((resolve, reject) => {
+    const mod = url.startsWith('https') ? https : http;
+    mod.get(url, { headers: { 'User-Agent': 'TestwallBooker-deploy/1.0' } }, (res) => {
+      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+        return get(res.headers.location).then(resolve).catch(reject);
+      }
+      const chunks = [];
+      res.on('data', c => chunks.push(c));
+      res.on('end', () => resolve(Buffer.concat(chunks)));
+      res.on('error', reject);
+    }).on('error', reject);
+  });
+}
+
+async function fetchJson(url) {
+  const buf = await get(url);
+  return JSON.parse(buf.toString('utf8'));
+}
+
+async function downloadFile(url, dest) {
+  const buf = await get(url);
+  fs.writeFileSync(dest, buf);
+}
+
+// Returns true if the requires_python spec is satisfied by our Python version.
+function cmpVer(majA, minA, majB, minB) {
+  return majA !== majB ? majA - majB : minA - minB;
+}
+
+function pyCompatible(spec) {
+  if (!spec) return true;
+  for (const part of spec.split(',').map(s => s.trim())) {
+    const m = part.match(/^([><=!~]+)\s*(\d+)(?:\.(\d+))?/);
+    if (!m) continue;
+    const [, op, maj, min = '0'] = m;
+    const cmp = cmpVer(PY_MAJOR, PY_MINOR, parseInt(maj, 10), parseInt(min, 10));
+    if (op === '>=' && cmp < 0)  return false;
+    if (op === '>'  && cmp <= 0) return false;
+    if (op === '<'  && cmp >= 0) return false;
+    if (op === '<=' && cmp > 0)  return false;
+    if (op === '!=' && cmp === 0) return false;
+  }
+  return true;
+}
+
+function semverCmp(a, b) {
+  const pa = a.split('.').map(x => parseInt(x) || 0);
+  const pb = b.split('.').map(x => parseInt(x) || 0);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const d = (pa[i] || 0) - (pb[i] || 0);
+    if (d !== 0) return d;
+  }
+  return 0;
+}
+
+// Fetch the best compatible version data for a package.
+async function fetchCompatible(name) {
+  const data = await fetchJson(`https://pypi.org/pypi/${encodeURIComponent(name)}/json`);
+
+  // Is the latest release compatible?
+  if (pyCompatible(data.info.requires_python)) return data;
+
+  // Walk releases newest-first to find a compatible one.
+  const versions = Object.keys(data.releases)
+    .filter(v => !/[a-zA-Z]/.test(v))   // skip pre-releases
+    .sort((a, b) => semverCmp(b, a));    // descending
+
+  for (const ver of versions) {
+    const files = data.releases[ver];
+    if (!files || files.length === 0) continue;
+    // requires_python is on each file entry
+    const reqPy = files[0].requires_python;
+    if (!pyCompatible(reqPy)) continue;
+    const wheel = selectWheel(files, pyTag);
+    if (!wheel) continue;
+    // Fetch full metadata for this version to get requires_dist
+    process.stderr.write(`  Note: ${name} latest incompatible with Python ${PY_MAJOR}.${PY_MINOR}; using ${ver}\n`);
+    return fetchJson(`https://pypi.org/pypi/${encodeURIComponent(name)}/${encodeURIComponent(ver)}/json`);
+  }
+
+  process.stderr.write(`ERROR: no compatible version found for ${name} on Python ${PY_MAJOR}.${PY_MINOR}\n`);
+  process.exit(1);
+}
+
+function selectWheel(files, pyTag) {
+  const whl = files.filter(f => f.filename.endsWith('.whl'));
+  return (
+    whl.find(f => f.filename.includes(`cp${pyTag}`) && /manylinux/.test(f.filename) && f.filename.includes('x86_64')) ||
+    whl.find(f => /cp3.*abi3.*manylinux/.test(f.filename) && f.filename.includes('x86_64')) ||
+    whl.find(f => f.filename.includes('py3-none-any')) ||
+    whl.find(f => f.filename.includes('py2.py3-none-any')) ||
+    null
+  );
+}
+
+function parseDeps(requires_dist) {
+  if (!requires_dist) return [];
+  const out = [];
+  for (const dep of requires_dist) {
+    if (/extra\s*==/.test(dep)) continue;
+    if (/sys_platform\s*==\s*['"]win/.test(dep)) continue;
+    const name = dep.split(/[\s;>=<!\[(]/)[0].trim().toLowerCase().replace(/_/g, '-');
+    if (name) out.push(name);
+  }
+  return out;
+}
+
+async function main() {
+  const rootPkgs = fs.readFileSync(reqFile, 'utf8')
+    .split('\n').map(l => l.trim())
+    .filter(l => l && !l.startsWith('#'))
+    .map(l => l.split(/[>=<!=\s\[]/)[0].trim().toLowerCase().replace(/_/g, '-'));
+
+  const queue = [...rootPkgs];
+  const visited = new Set();
+  let count = 0;
+
+  while (queue.length > 0) {
+    const pkg = queue.shift().toLowerCase().replace(/_/g, '-');
+    if (visited.has(pkg)) continue;
+    visited.add(pkg);
+
+    process.stderr.write(`  Resolving ${pkg}...\n`);
+    const data = await fetchCompatible(pkg);
+
+    const wheel = selectWheel(data.urls, pyTag);
+    if (!wheel) {
+      process.stderr.write(`ERROR: no suitable wheel for ${pkg}\n`);
+      process.exit(1);
+    }
+
+    const dest = path.join(wheelDir, wheel.filename);
+    if (!fs.existsSync(dest)) {
+      process.stderr.write(`  Downloading ${wheel.filename}...\n`);
+      await downloadFile(wheel.url, dest);
+    }
+    count++;
+
+    for (const dep of parseDeps(data.info.requires_dist)) {
+      if (!visited.has(dep)) queue.push(dep);
+    }
+  }
+
+  process.stderr.write(`Downloaded ${count} wheels.\n`);
+}
+
+main().catch(e => { process.stderr.write(`FATAL: ${e}\n`); process.exit(1); });
+NODESCRIPT
 }
 
 provision_server() {
@@ -431,8 +657,16 @@ configure_service_and_deps() {
     if ssh_sudo "test -x '${REMOTE_APP_DIR}/.venv/bin/python3'"; then
       ok "Reusing existing remote Python venv"
     else
-      warn "No wheel bundle and no existing remote .venv; continuing without Python sidecar dependencies."
-      warn "Backend API will run, but Python-backed functionality may be degraded until wheels are provided."
+      warn "No wheel bundle and no existing remote .venv; attempting online pip install as fallback..."
+      if ssh_sudo "python3 -m venv '${REMOTE_APP_DIR}/.venv' && '${REMOTE_APP_DIR}/.venv/bin/pip' install --quiet -r '${REMOTE_APP_DIR}/src/python/requirements.txt'"; then
+        ok "Created remote venv and installed Python dependencies via pip"
+      else
+        warn "Online pip install also failed. Python server will not be available."
+        warn "To fix manually: ssh into the server and run:"
+        warn "  python3 -m venv ${REMOTE_APP_DIR}/.venv"
+        warn "  ${REMOTE_APP_DIR}/.venv/bin/pip install -r ${REMOTE_APP_DIR}/src/python/requirements.txt"
+        warn "  sudo systemctl restart testwallbooker"
+      fi
     fi
   fi
 
@@ -448,7 +682,7 @@ Group=${SERVICE_GROUP}
 WorkingDirectory=${REMOTE_APP_DIR}
 EnvironmentFile=-${REMOTE_APP_DIR}/.env
 Environment=NODE_ENV=production
-Environment=PYTHON_CMD=python3
+Environment=PYTHON_CMD=${REMOTE_APP_DIR}/.venv/bin/python3
 ExecStart=/usr/bin/npm start
 Restart=on-failure
 RestartSec=5

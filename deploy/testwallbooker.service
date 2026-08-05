@@ -6,10 +6,11 @@ After=network.target mysql.service
 Type=simple
 User=www-data
 WorkingDirectory=/opt/testwallbooker
+EnvironmentFile=/opt/testwallbooker/.env
+Environment=PYTHON_CMD=/opt/testwallbooker/.venv/bin/python3
 ExecStart=/opt/testwallbooker/node_modules/.bin/tsx server/index.ts
 Restart=on-failure
 RestartSec=5
-EnvironmentFile=/opt/testwallbooker/.env
 
 [Install]
 WantedBy=multi-user.target
