@@ -122,6 +122,12 @@ onUnmounted(() => stopRefresh())
           <span v-else class="text-muted-color">-</span>
         </template>
       </Column>
+      <Column header="Current Machine Users">
+        <template #body="{ data }">
+          <span v-if="data.currentUsers.length > 0">{{ data.currentUsers.join(', ') }}</span>
+          <span v-else class="text-muted-color">-</span>
+        </template>
+      </Column>
       <Column field="ip_address" header="IP Address" sortable />
       <Column header="Actions" v-if="accountStore.showAdminContent">
         <template #body="{ data }">

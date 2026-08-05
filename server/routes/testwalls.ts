@@ -4,8 +4,66 @@ import type { Request, Response } from 'express'
 
 const router = Router()
 
+type MachineStatus = {
+  name?: string
+  ip?: string
+  users?: string[]
+}
+
+async function getLiveMachineUsersByKey() {
+  const pythonStatusUrl = process.env.PYTHON_STATUS_URL ?? 'http://127.0.0.1:8080/api/machines'
+
+  try {
+    const response = await fetch(pythonStatusUrl, {
+      signal: AbortSignal.timeout(2000),
+    })
+
+    if (!response.ok) {
+      return {
+        byIp: new Map<string, string[]>(),
+        byName: new Map<string, string[]>(),
+      }
+    }
+
+    const payload = (await response.json()) as { machines?: MachineStatus[] }
+    const machines = Array.isArray(payload.machines) ? payload.machines : []
+
+    const byIp = new Map<string, string[]>()
+    const byName = new Map<string, string[]>()
+
+    for (const machine of machines) {
+      const users = Array.isArray(machine.users)
+        ? machine.users.filter(
+            (user): user is string => typeof user === 'string' && user.trim().length > 0,
+          )
+        : []
+
+      if (users.length === 0) {
+        continue
+      }
+
+      if (typeof machine.ip === 'string' && machine.ip.trim()) {
+        byIp.set(machine.ip.trim(), users)
+      }
+
+      if (typeof machine.name === 'string' && machine.name.trim()) {
+        byName.set(machine.name.trim().toLowerCase(), users)
+      }
+    }
+
+    return { byIp, byName }
+  } catch {
+    return {
+      byIp: new Map<string, string[]>(),
+      byName: new Map<string, string[]>(),
+    }
+  }
+}
+
 // Fast overview payload: current availability and current user name only.
 router.get('/overview', async (_req: Request, res: Response) => {
+  const { byIp, byName } = await getLiveMachineUsersByKey()
+
   const [rows] = await pool.execute(`
     SELECT
       t.id,
@@ -30,15 +88,22 @@ router.get('/overview', async (_req: Request, res: Response) => {
     ORDER BY t.name
   `)
 
-  const mapped = (rows as any[]).map((row) => ({
-    id: row.id,
-    name: row.name,
-    ip_address: row.ip_address,
-    created_at: row.created_at,
-    current_user_id: row.active_user_id ?? null,
-    current_user: row.active_username ?? null,
-    availability_status: row.availability_status,
-  }))
+  const mapped = (rows as any[]).map((row) => {
+    const liveUsersByIp = byIp.get(row.ip_address)
+    const liveUsersByName = byName.get(String(row.name).toLowerCase())
+    const liveUsers = liveUsersByIp ?? liveUsersByName ?? []
+
+    return {
+      id: row.id,
+      name: row.name,
+      ip_address: row.ip_address,
+      created_at: row.created_at,
+      current_user_id: row.active_user_id ?? null,
+      current_user: row.active_username ?? null,
+      current_users: liveUsers,
+      availability_status: row.availability_status,
+    }
+  })
 
   res.json(mapped)
 })

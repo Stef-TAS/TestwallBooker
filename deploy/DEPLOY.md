@@ -65,7 +65,10 @@ DB_PASSWORD=<strong_password_here>
 DB_NAME=testwallbooker
 SERVER_PORT=3001
 NODE_ENV=production
+PYTHON_STATUS_URL=http://127.0.0.1:8080/api/machines
 ```
+
+Use `PYTHON_STATUS_URL` if the Node backend should read live machine-user status from the Python status server at a specific address.
 
 ## Deploy command
 

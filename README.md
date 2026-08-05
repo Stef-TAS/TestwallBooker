@@ -77,6 +77,7 @@ SERVER_PORT=3001
 NODE_ENV=development
 CORS_ORIGIN=http://localhost:5173
 PYTHON_CMD=python3
+PYTHON_STATUS_URL=http://127.0.0.1:8080/api/machines
 ```
 
 Notes:

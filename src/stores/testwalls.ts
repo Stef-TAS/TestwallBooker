@@ -12,6 +12,7 @@ export type TestwallWithAvailability = Testwall & {
   isAvailable: boolean
   availabilityStatus: 'available' | 'unavailable' | 'out_of_service'
   currentUser?: string
+  currentUsers: string[]
   currentUserId?: number | null
   currentUserProfilePicture?: string | null
 }
@@ -23,6 +24,7 @@ type OverviewRow = {
   created_at?: string
   current_user_id: number | null
   current_user: string | null
+  current_users?: string[]
   availability_status: 'available' | 'unavailable' | 'out_of_service'
 }
 
@@ -76,6 +78,7 @@ export const useTestwallsStore = defineStore('testwalls', () => {
         isAvailable: availabilityStatus === 'available',
         availabilityStatus,
         currentUser: activeBooking?.username,
+        currentUsers: activeBooking?.username ? [activeBooking.username] : [],
         currentUserProfilePicture: null,
       }
     })
@@ -128,6 +131,7 @@ export const useTestwallsStore = defineStore('testwalls', () => {
       isAvailable: availabilityStatus === 'available',
       availabilityStatus,
       currentUser: row.current_user ?? undefined,
+      currentUsers: Array.isArray(row.current_users) ? row.current_users : [],
       currentUserId: row.current_user_id,
       currentUserProfilePicture: null,
     }
