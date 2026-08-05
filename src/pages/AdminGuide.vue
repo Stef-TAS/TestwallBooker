@@ -15,26 +15,36 @@ const adminAccess = [
     label: 'Privilege',
   },
   {
-    title: 'Create New Users',
+    title: 'User and Access Lifecycle',
     details:
-      'From Account > Admin section, admins can create user accounts and define identity profile values such as names, location, and timezone.',
+      'From Account > Admin section, admins can create users, edit identity data, assign/revoke permission levels, and remove accounts when needed.',
     severity: 'info',
     label: 'Identity Management',
   },
   {
-    title: 'Visibility Across Platform',
+    title: 'History and Intervention',
     details:
-      'Admins can inspect wall availability, booking history, and account context to support scheduling decisions and incident response.',
+      'Admins can switch Booking History to any user and terminate active bookings directly when intervention is required.',
     severity: 'success',
     label: 'Operational Oversight',
+  },
+  {
+    title: 'Live Occupancy Visibility',
+    details:
+      'Overview includes current booking owner plus live machine user snapshots and profile pictures to improve incident triage.',
+    severity: 'warn',
+    label: 'Real-Time Signal',
   },
 ]
 
 const adminCanDo = [
   'Toggle admin-only interface content from Account settings',
-  'Create new user accounts directly in the application',
+  'Create, update, and delete user accounts directly in the application',
+  'Assign or revoke access-right levels while modifying a user',
+  'Inspect booking history for any account via user selector controls',
+  'Terminate active bookings from the Booking History actions column',
   'Review booking status outcomes (active, finished, crashed, forcequit)',
-  'Monitor testwall occupancy and current user attribution in Overview',
+  'Monitor occupancy using current booking owner, live machine users, and avatar context in Overview',
   'Use pseudo terminal workflows and command catalog tools',
 ]
 
@@ -47,25 +57,26 @@ const adminWorkflows = [
   {
     step: '02',
     title: 'Manage Accounts',
-    body: 'Create user profiles as needed and ensure account data is complete (email, name, location, timezone).',
+    body: 'Create or modify user profiles and keep identity plus permission levels in sync with actual responsibilities.',
   },
   {
     step: '03',
     title: 'Monitor Availability and Bookings',
-    body: 'Use Overview and Booking screens to monitor occupancy, detect conflicts, and spot out-of-service indicators.',
+    body: 'Use Overview auto-refresh and Booking history controls to monitor occupancy, detect conflicts, and identify stalled active bookings.',
   },
   {
     step: '04',
-    title: 'Guide Operators',
-    body: 'Direct teams toward predefined commands and standard booking behavior for consistent execution.',
+    title: 'Intervene and Document',
+    body: 'Terminate problematic active bookings when needed and communicate why the intervention happened to keep operations traceable.',
   },
 ]
 
 const limitsAndResponsibilities = [
   'Current password validation is basic and should be treated as non-final security behavior.',
   'The terminal is pseudo-terminal style and not a direct remote shell into physical hardware.',
+  'Role-based visibility is implemented in the UI; production-grade backend authorization should remain a priority.',
   'Use admin privileges carefully: changes to users and scheduling can impact many teams at once.',
-  'When a wall appears unavailable or out of service, verify booking status and history before intervention.',
+  'When a wall appears unavailable, verify booking status, active user, and live machine user context before intervention.',
 ]
 </script>
 
@@ -106,7 +117,7 @@ const limitsAndResponsibilities = [
     </Card>
 
     <div v-else>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
         <Card v-for="item in adminAccess" :key="item.title" class="shadow-md">
           <template #content>
             <div class="flex items-center justify-between gap-2 mb-2">
@@ -179,9 +190,9 @@ const limitsAndResponsibilities = [
             traceable decisions.
           </p>
           <p class="text-sm leading-6 opacity-80">
-            The current system already supports strong visibility and coordination. As backend
-            security and workflow wiring mature, your role is to keep team usage disciplined and
-            consistent.
+            The current system now includes practical admin workflows for account lifecycle,
+            permissions, booking intervention, and live occupancy tracking. Keep those actions
+            consistent and well-communicated so teams can trust platform decisions.
           </p>
         </template>
       </Card>

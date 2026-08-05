@@ -14,7 +14,7 @@ const quickFacts = [
   },
   {
     label: 'Operational Focus',
-    value: 'Availability, bookings, command consistency, and traceability',
+    value: 'Availability, bookings, account controls, and traceability',
     accent: 'bg-emerald-500/10 border-emerald-500/30',
   },
 ]
@@ -30,7 +30,7 @@ const userJourney = [
     step: '02',
     title: 'Overview and Live Status',
     description:
-      'The system computes wall status from active booking windows and status markers like active, crashed, and forcequit.',
+      'Overview now supports manual refresh and optional auto-refresh, showing current booking owner plus live machine user snapshots when available.',
   },
   {
     step: '03',
@@ -48,31 +48,35 @@ const userJourney = [
     step: '05',
     title: 'Account and Admin Controls',
     description:
-      'Profile updates are user-facing while admin-specific controls unlock additional management capabilities.',
+      'Users can update profile pictures and local display preferences; admins can additionally manage users and permission levels from Account.',
   },
 ]
 
 const apiDomains = [
   'Authentication and login profile response',
-  'Account registration and profile updates',
+  'Account registration, profile updates, and profile-picture retrieval',
   'Testwall inventory CRUD operations',
-  'Booking CRUD and overlap/availability checks',
+  'Booking CRUD, overlap checks, and active-booking termination',
   'Access-right assignment and role checks',
   'Operational logs and per-user command history',
+  'Overview payload with active owner plus live machine users from Python sidecar',
 ]
 
 const operationalValue = [
   'Prevents scheduling collisions through overlap checks',
   'Makes occupancy and ownership visible across teams',
+  'Lets admins intervene quickly by terminating active bookings',
   'Standardizes command workflows with predefined commands',
+  'Supports personalization through themes, compact view, and time-format preferences',
   'Improves traceability with logs and command history',
   'Reduces idle time and coordination overhead',
 ]
 
 const implementationNotes = [
   'Password handling is currently basic and marked for secure hashing improvements.',
-  'The booking finish/confirmation flow appears partially wired in the current UI.',
+  'Overview availability currently comes from active booking windows plus optional live-machine user snapshots from the Python status endpoint.',
   'Terminal behavior is currently pseudo-terminal style, not a direct hardware shell.',
+  'The Query page route exists but is currently minimal and not surfaced in the main sidebar actions.',
 ]
 </script>
 <template>

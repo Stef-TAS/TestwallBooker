@@ -6,7 +6,7 @@ const tutorialSteps = [
     step: '01',
     title: 'Check Overview First',
     description:
-      'Start in Overview to verify the testwall state before you try to book. Prefer walls marked Available. If a wall is Out of Service, do not plan work on it.',
+      'Start in Overview to verify testwall state before booking. Use Refresh or auto-refresh to keep the list current, and prefer walls marked Available.',
     tags: ['Availability Check', 'Required First Step'],
   },
   {
@@ -20,36 +20,38 @@ const tutorialSteps = [
     step: '03',
     title: 'Complete the Booking Flow',
     description:
-      'Review account details, choose start and end time, select an available wall, and confirm your reservation. Use realistic time windows to avoid scheduling conflicts.',
+      'Review account details, choose start and end time, select an available wall, and confirm your reservation. Watch conflict warnings and existing-day bookings in the date picker before you proceed.',
     tags: ['Stepper Flow', 'Reserve Time Slot'],
   },
   {
     step: '04',
     title: 'Review Booking History',
     description:
-      'After booking, review the Booking History section to track status changes such as active, finished, crashed, or forcequit. This is useful for audits and troubleshooting.',
+      'After booking, review Booking History to track status changes such as active, finished, crashed, or forcequit. Admins can switch user scope and terminate active bookings from this section.',
     tags: ['Status Tracking', 'Operational Traceability'],
   },
   {
     step: '05',
-    title: 'Use Pseudo Terminal During Active Booking',
+    title: 'Use Pseudo Terminal and Command Search',
     description:
-      'When your booking is active and currently running, open Pseudo Terminal to execute commands. Press Ctrl/Cmd + L to open the command palette and quickly find predefined commands.',
+      'Open Pseudo Terminal for command workflows. Press Ctrl/Cmd + L to open the command palette, search predefined commands by category, and copy them quickly into the terminal.',
     tags: ['Runtime Actions', 'Ctrl/Cmd + L'],
   },
 ]
 
 const doList = [
   'Always validate wall availability in Overview before booking.',
+  'Use refresh controls when availability data might be stale.',
   'Pick precise start/end times that match your real execution window.',
+  'Use date-picker conflict hints to avoid overlap before confirming.',
   'Confirm your selected testwall before finishing the booking flow.',
   'Check Booking History after runs to verify final status.',
   'Use the command palette in Pseudo Terminal for consistent commands.',
 ]
 
 const avoidList = [
-  'Do not attempt to use a wall marked Out of Service.',
-  'Do not assume terminal access without an active booking window.',
+  'Do not skip an availability refresh when scheduling decisions are critical.',
+  'Do not ignore booking conflict warnings in the timeframe step.',
   'Do not ignore disabled Booking access; contact an admin instead.',
   'Do not skip history review when debugging failed or interrupted sessions.',
 ]
