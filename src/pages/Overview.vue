@@ -2,13 +2,15 @@
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import { onMounted, onUnmounted, ref } from 'vue'
-import { Button, Card, Skeleton, Tag } from 'primevue'
+import { Button, Card, Skeleton, Tag, Toast } from 'primevue'
+import { useToast } from 'primevue/usetoast'
 import { storeToRefs } from 'pinia'
-import { useTestwallsStore } from '@/stores/testwalls'
+import { useTestwallsStore, type TestwallWithAvailability } from '@/stores/testwalls'
 import { useAccountStore } from '@/stores/account'
 import { useSettingsStore } from '@/stores/settings'
 
 const defaultAvatarUrl = new URL('../data/avatar.png', import.meta.url).href
+const toast = useToast()
 
 const testwallsStore = useTestwallsStore()
 const { overviewRows, isOverviewLoading, overviewLoadError, isOverviewProfilePicturesLoading } =
@@ -39,11 +41,62 @@ function toggleAutoRefresh() {
   autoRefresh.value ? startRefresh() : stopRefresh()
 }
 
+function escapeSqlString(value: string): string {
+  return value.replaceAll("'", "''")
+}
+
+function buildClipboardText(row: TestwallWithAvailability): string {
+  const lines = [
+    `Testwall ID: ${row.id}`,
+    `Name: ${row.name}`,
+    `IP Address: ${row.ip_address}`,
+    `Availability: ${row.availabilityStatus}`,
+    `Current User: ${row.currentUser ?? '-'}`,
+    `Current Machine Users: ${row.currentUsers.length > 0 ? row.currentUsers.join(', ') : '-'}`,
+  ]
+
+  if (accountStore.account?.isAdmin) {
+    lines.push('')
+    lines.push('-- Admin SQL')
+    lines.push(
+      `UPDATE testwalls SET name = '${escapeSqlString(row.name)}', ip_address = '${escapeSqlString(row.ip_address)}' WHERE id = ${row.id};`,
+    )
+  }
+
+  return lines.join('\n')
+}
+
+async function handleOverviewRowClick(row: TestwallWithAvailability) {
+  try {
+    await navigator.clipboard.writeText(buildClipboardText(row))
+    toast.add({
+      severity: 'success',
+      summary: 'Copied Testwall Info',
+      detail: accountStore.account?.isAdmin
+        ? `Copied ${row.name} details and SQL update statement to the clipboard.`
+        : `Copied ${row.name} details to the clipboard.`,
+      life: 4000,
+    })
+  } catch (error) {
+    toast.add({
+      severity: 'error',
+      summary: 'Copy Failed',
+      detail: error instanceof Error ? error.message : 'Could not copy testwall details.',
+      life: 5000,
+    })
+  }
+}
+
+function getOverviewRowClass(): string {
+  return 'cursor-pointer [&>td]:transition-colors [&>td]:duration-150 hover:[&>td]:bg-slate-100/70 dark:hover:[&>td]:bg-slate-800/60'
+}
+
 onMounted(() => void loadOverview())
 onUnmounted(() => stopRefresh())
 </script>
 <template>
   <div :class="{ 'compact-page': settingsStore.compactView }">
+    <Toast />
     <Card class="relative overflow-hidden border border-blue-500/20 shadow-xl mb-6">
       <template #content>
         <div class="absolute -top-24 -right-16 h-48 w-48 rounded-full bg-blue-500/15 blur-2xl" />
@@ -94,8 +147,10 @@ onUnmounted(() => stopRefresh())
         :rows="settingsStore.compactView ? 25 : 20"
         :rowsPerPageOptions="[5, 10, 20, 50]"
         :size="settingsStore.compactView ? 'small' : undefined"
+        :rowClass="getOverviewRowClass"
         stripedRows
         class="shadow-xl min-w-max"
+        @row-click="({ data }) => handleOverviewRowClick(data)"
       >
         <Column field="id" header="ID" sortable />
         <Column field="name" header="Testwall" sortable />
@@ -157,7 +212,7 @@ onUnmounted(() => stopRefresh())
         <Column field="ip_address" header="IP Address" sortable />
         <Column header="Actions" v-if="accountStore.showAdminContent">
           <template #body="{ data }">
-            <Button v-if="data.availabilityStatus === 'unavailable'" severity="warning"
+            <Button v-if="data.availabilityStatus === 'unavailable'" severity="warning" @click.stop
               >Terminate</Button
             >
           </template>
