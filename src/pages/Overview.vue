@@ -100,11 +100,36 @@ onUnmounted(() => stopRefresh())
       <Column field="name" header="Testwall" sortable />
       <Column field="availabilityStatus" header="Availability" sortable>
         <template #body="{ data }">
-          <Tag v-if="data.availabilityStatus === 'available'" severity="success">Available</Tag>
-          <Tag v-else-if="data.availabilityStatus === 'unavailable'" severity="warn"
+          <Tag
+            v-if="data.availabilityStatus === 'available'"
+            severity="success"
+            v-tooltip.top="{
+              value:
+                '<div class=\'font-semibold text-sm\'>Available</div><div class=\'opacity-75 text-sm mt-1\'>The device is currently <b>online</b> and there is no booking happening at the moment.<br><span class=\'opacity-60\'>Note: this can change.</span></div>',
+              escape: false,
+            }"
+            >Available</Tag
+          >
+          <Tag
+            v-else-if="data.availabilityStatus === 'unavailable'"
+            severity="warn"
+            v-tooltip.top="{
+              value:
+                '<div class=\'font-semibold text-sm\'>Unavailable</div><div class=\'opacity-75 text-sm mt-1\'>The device is currently <b>online</b>, but is being used for a test.<br><span class=\'opacity-60\'>If this is wrong, contact the current tester or an admin.</span></div>',
+              escape: false,
+            }"
             >Unavailable</Tag
           >
-          <Tag v-else severity="danger">Out of Service</Tag>
+          <Tag
+            v-else
+            severity="danger"
+            v-tooltip.top="{
+              value:
+                '<div class=\'font-semibold text-sm\'>Out of Service</div><div class=\'opacity-75 text-sm mt-1\'>The device is currently being repaired, upgraded, or is in a state that makes it unavailable for access.<br><span class=\'opacity-60\'>If this is wrong, contact an admin.</span></div>',
+              escape: false,
+            }"
+            >Out of Service</Tag
+          >
         </template>
       </Column>
       <Column field="currentUser" header="Current User" sortable>
@@ -131,7 +156,9 @@ onUnmounted(() => stopRefresh())
       <Column field="ip_address" header="IP Address" sortable />
       <Column header="Actions" v-if="accountStore.showAdminContent">
         <template #body="{ data }">
-          <Button v-if="!data.isAvailable" severity="warning">Terminate</Button>
+          <Button v-if="data.availabilityStatus === 'unavailable'" severity="warning"
+            >Terminate</Button
+          >
         </template>
       </Column>
     </DataTable>
