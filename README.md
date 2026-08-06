@@ -147,9 +147,10 @@ If this works but backend still fails, restart backend and inspect startup logs 
 
 ## Deployment Documentation
 
-1. General deployment workflow: deploy/DEPLOY.md
-2. Red Hat specific deployment guide: deploy/DEPLOY-REDHAT.md
-3. Full from-scratch setup guide: deploy/SETUP-FROM-SCRATCH.md
+1. Primary setup and maintenance guide: deploy/TESTWALL-SETUP.md
+2. General deployment workflow: deploy/DEPLOY.md
+3. Red Hat specific deployment guide: deploy/DEPLOY-REDHAT.md
+4. Production server from-scratch setup guide: deploy/SETUP-FROM-SCRATCH.md
 
 ## Summary For Internal Consumers
 
