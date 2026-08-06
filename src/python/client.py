@@ -29,7 +29,7 @@ def collect_machine_state(machine_name: str) -> dict[str, object]:
 def send_heartbeat(server_base_url: str, state: dict[str, object], timeout_seconds: int = 10) -> None:
     """Send one snapshot to the server heartbeat endpoint."""
     endpoint = server_base_url.rstrip("/") + "/api/heartbeat"
-    response = requests.post(endpoint, json=state, timeout=timeout_seconds)
+    response = requests.post(endpoint, json=state, timeout=timeout_seconds, proxies={"http": None, "https": None})
     response.raise_for_status()
 
 

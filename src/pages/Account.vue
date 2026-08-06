@@ -406,11 +406,34 @@ function handleLogout() {
           <div class="flex justify-between">
             <span class="text-color">Access Right(s)</span>
             <span class="text-muted-color">
-              <Tag v-if="accountStore.account?.isAdmin" severity="danger">Admin</Tag>
-              <Tag v-if="accountStore.account?.canTestwall" severity="info">Testwall</Tag>
+              <Tag
+                v-if="accountStore.account?.isAdmin"
+                severity="danger"
+                v-tooltip.left="{
+                  value:
+                    '<div class=\'font-semibold text-sm\'>Admin</div><div class=\'opacity-75 text-sm mt-1\'>Full platform control. Can manage user accounts and permissions, terminate any active booking, view booking history for all users, and toggle admin-only UI content from Account settings.</div>',
+                  escape: false,
+                }"
+                >Admin</Tag
+              >
+              <Tag
+                v-if="accountStore.account?.canTestwall"
+                severity="info"
+                v-tooltip.left="{
+                  value:
+                    '<div class=\'font-semibold text-sm\'>Testwall Operator</div><div class=\'opacity-75 text-sm mt-1\'>Can book testwalls, access the pseudo terminal while a booking is active, and run commands against testwall resources.</div>',
+                  escape: false,
+                }"
+                >Testwall</Tag
+              >
               <Tag
                 v-if="!accountStore.account?.isAdmin && !accountStore.account?.canTestwall"
                 severity="success"
+                v-tooltip.left="{
+                  value:
+                    '<div class=\'font-semibold text-sm\'>Observer</div><div class=\'opacity-75 text-sm mt-1\'>Read-only access. Can view the Overview and testwall availability, but cannot create bookings or access the terminal. Contact an Admin to request elevated permissions.</div>',
+                  escape: false,
+                }"
                 >Observer</Tag
               >
             </span>

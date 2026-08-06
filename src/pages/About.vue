@@ -133,15 +133,39 @@ const implementationNotes = [
         <div class="space-y-3 text-sm">
           <div class="flex items-center justify-between gap-3">
             <span class="font-medium">Admin</span>
-            <Tag severity="danger" value="Full Management" />
+            <Tag
+              severity="danger"
+              value="Full Management"
+              v-tooltip.left="{
+                value:
+                  '<div class=\'font-semibold text-sm\'>Admin</div><div class=\'opacity-75 text-sm mt-1\'>Full platform control. Can manage user accounts and permissions, terminate any active booking, view booking history for all users, and toggle admin-only UI content from Account settings.</div>',
+                escape: false,
+              }"
+            />
           </div>
           <div class="flex items-center justify-between gap-3">
             <span class="font-medium">Operator</span>
-            <Tag severity="info" value="Book + Operate" />
+            <Tag
+              severity="info"
+              value="Book + Operate"
+              v-tooltip.left="{
+                value:
+                  '<div class=\'font-semibold text-sm\'>Testwall Operator</div><div class=\'opacity-75 text-sm mt-1\'>Can book testwalls, access the pseudo terminal while a booking is active, and run commands against testwall resources.</div>',
+                escape: false,
+              }"
+            />
           </div>
           <div class="flex items-center justify-between gap-3">
             <span class="font-medium">User</span>
-            <Tag severity="success" value="Observer" />
+            <Tag
+              severity="success"
+              value="Observer"
+              v-tooltip.left="{
+                value:
+                  '<div class=\'font-semibold text-sm\'>Observer</div><div class=\'opacity-75 text-sm mt-1\'>Read-only access. Can view the Overview and testwall availability, but cannot create bookings or access the terminal. Contact an Admin to request elevated permissions.</div>',
+                escape: false,
+              }"
+            />
           </div>
           <Divider class="my-2" />
           <p class="leading-6 opacity-80">
@@ -158,7 +182,11 @@ const implementationNotes = [
         <Divider class="my-3" />
 
         <div class="space-y-3">
-          <div v-for="item in userJourney" :key="item.step" class="flex gap-4 rounded-xl p-4">
+          <div
+            v-for="item in userJourney"
+            :key="item.step"
+            class="flex gap-4 rounded-xl p-4 transition-transform duration-150 hover:scale-[1.02]"
+          >
             <div
               class="h-9 w-9 shrink-0 rounded-lg bg-cyan-500/20 text-cyan-900 dark:text-cyan-200 font-semibold flex items-center justify-center"
             >
@@ -180,7 +208,11 @@ const implementationNotes = [
           roles, testwalls, bookings, logs, and command history.
         </p>
         <div class="space-y-2">
-          <div v-for="domain in apiDomains" :key="domain" class="rounded-lg px-3 py-2 text-sm">
+          <div
+            v-for="domain in apiDomains"
+            :key="domain"
+            class="rounded-lg px-3 py-2 text-sm transition-transform duration-150 hover:scale-[1.02]"
+          >
             - {{ domain }}
           </div>
         </div>
@@ -191,7 +223,7 @@ const implementationNotes = [
           <div
             v-for="value in operationalValue"
             :key="value"
-            class="rounded-lg px-3 py-2 text-sm leading-6"
+            class="rounded-lg px-3 py-2 text-sm leading-6 transition-transform duration-150 hover:scale-[1.02]"
           >
             - {{ value }}
           </div>
@@ -211,7 +243,7 @@ const implementationNotes = [
           <div
             v-for="note in implementationNotes"
             :key="note"
-            class="rounded-lg px-3 py-2 text-sm leading-6"
+            class="rounded-lg px-3 py-2 text-sm leading-6 transition-transform duration-150 hover:scale-[1.02]"
           >
             - {{ note }}
           </div>
@@ -220,3 +252,15 @@ const implementationNotes = [
     </Card>
   </div>
 </template>
+
+<style scoped>
+:deep(.p-card),
+:deep(.p-fieldset) {
+  transition: transform 0.2s ease;
+}
+
+:deep(.p-card:hover),
+:deep(.p-fieldset:hover) {
+  transform: scale(1.01);
+}
+</style>

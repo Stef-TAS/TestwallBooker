@@ -86,7 +86,11 @@ const avoidList = [
         <Divider class="my-3" />
 
         <div class="space-y-3">
-          <div v-for="item in tutorialSteps" :key="item.step" class="rounded-xl shadow-lg p-4">
+          <div
+            v-for="item in tutorialSteps"
+            :key="item.step"
+            class="rounded-xl shadow-lg p-4 transition-transform duration-150 hover:scale-[1.02]"
+          >
             <div class="flex items-start gap-4">
               <div
                 class="h-9 w-9 shrink-0 rounded-lg bg-blue-500/20 text-blue-900 dark:text-blue-200 font-semibold flex items-center justify-center"
@@ -118,7 +122,7 @@ const avoidList = [
           <div
             v-for="item in doList"
             :key="item"
-            class="rounded-lg border border-emerald-500/25 bg-emerald-500/10 px-3 py-2 text-sm leading-6"
+            class="rounded-lg border border-emerald-500/25 bg-emerald-500/10 px-3 py-2 text-sm leading-6 transition-transform duration-150 hover:scale-[1.02]"
           >
             {{ item }}
           </div>
@@ -130,7 +134,7 @@ const avoidList = [
           <div
             v-for="item in avoidList"
             :key="item"
-            class="rounded-lg border border-amber-500/25 bg-amber-500/10 px-3 py-2 text-sm leading-6"
+            class="rounded-lg border border-amber-500/25 bg-amber-500/10 px-3 py-2 text-sm leading-6 transition-transform duration-150 hover:scale-[1.02]"
           >
             {{ item }}
           </div>
@@ -159,3 +163,15 @@ const avoidList = [
     </Card>
   </div>
 </template>
+
+<style scoped>
+:deep(.p-card),
+:deep(.p-fieldset) {
+  transition: transform 0.2s ease;
+}
+
+:deep(.p-card:hover),
+:deep(.p-fieldset:hover) {
+  transform: scale(1.01);
+}
+</style>

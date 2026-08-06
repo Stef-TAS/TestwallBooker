@@ -135,7 +135,7 @@ const limitsAndResponsibilities = [
             <div
               v-for="capability in adminCanDo"
               :key="capability"
-              class="rounded-lg shadow-md px-3 py-2 text-sm leading-6"
+              class="rounded-lg shadow-md px-3 py-2 text-sm leading-6 transition-transform duration-150 hover:scale-[1.02]"
             >
               {{ capability }}
             </div>
@@ -147,7 +147,7 @@ const limitsAndResponsibilities = [
             <div
               v-for="item in limitsAndResponsibilities"
               :key="item"
-              class="rounded-lg shadow-md px-3 py-2 text-sm leading-6"
+              class="rounded-lg shadow-md px-3 py-2 text-sm leading-6 transition-transform duration-150 hover:scale-[1.02]"
             >
               {{ item }}
             </div>
@@ -164,7 +164,7 @@ const limitsAndResponsibilities = [
             <div
               v-for="flow in adminWorkflows"
               :key="flow.step"
-              class="flex gap-4 rounded-xl shadow-md p-4"
+              class="flex gap-4 rounded-xl shadow-md p-4 transition-transform duration-150 hover:scale-[1.02]"
             >
               <div
                 class="h-9 w-9 shrink-0 rounded-lg bg-red-500/20 text-red-900 dark:text-red-200 font-semibold flex items-center justify-center"
@@ -199,3 +199,15 @@ const limitsAndResponsibilities = [
     </div>
   </div>
 </template>
+
+<style scoped>
+:deep(.p-card),
+:deep(.p-fieldset) {
+  transition: transform 0.2s ease;
+}
+
+:deep(.p-card:hover),
+:deep(.p-fieldset:hover) {
+  transform: scale(1.01);
+}
+</style>

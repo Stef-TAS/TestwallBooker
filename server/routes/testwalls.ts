@@ -8,6 +8,7 @@ type MachineStatus = {
   name?: string
   ip?: string
   users?: string[]
+  testing?: boolean
 }
 
 async function getLiveMachineUsersByKey() {
@@ -22,6 +23,11 @@ async function getLiveMachineUsersByKey() {
       return {
         byIp: new Map<string, string[]>(),
         byName: new Map<string, string[]>(),
+        knownIps: new Set<string>(),
+        knownNames: new Set<string>(),
+        testingIps: new Set<string>(),
+        testingNames: new Set<string>(),
+        serverReachable: false,
       }
     }
 
@@ -30,6 +36,10 @@ async function getLiveMachineUsersByKey() {
 
     const byIp = new Map<string, string[]>()
     const byName = new Map<string, string[]>()
+    const knownIps = new Set<string>()
+    const knownNames = new Set<string>()
+    const testingIps = new Set<string>()
+    const testingNames = new Set<string>()
 
     for (const machine of machines) {
       const users = Array.isArray(machine.users)
@@ -37,32 +47,47 @@ async function getLiveMachineUsersByKey() {
             (user): user is string => typeof user === 'string' && user.trim().length > 0,
           )
         : []
-
-      if (users.length === 0) {
-        continue
-      }
+      const isTesting = machine.testing === true
 
       if (typeof machine.ip === 'string' && machine.ip.trim()) {
-        byIp.set(machine.ip.trim(), users)
+        knownIps.add(machine.ip.trim())
+        if (users.length > 0) {
+          byIp.set(machine.ip.trim(), users)
+        }
+        if (isTesting) {
+          testingIps.add(machine.ip.trim())
+        }
       }
 
       if (typeof machine.name === 'string' && machine.name.trim()) {
-        byName.set(machine.name.trim().toLowerCase(), users)
+        knownNames.add(machine.name.trim().toLowerCase())
+        if (users.length > 0) {
+          byName.set(machine.name.trim().toLowerCase(), users)
+        }
+        if (isTesting) {
+          testingNames.add(machine.name.trim().toLowerCase())
+        }
       }
     }
 
-    return { byIp, byName }
+    return { byIp, byName, knownIps, knownNames, testingIps, testingNames, serverReachable: true }
   } catch {
     return {
       byIp: new Map<string, string[]>(),
       byName: new Map<string, string[]>(),
+      knownIps: new Set<string>(),
+      knownNames: new Set<string>(),
+      testingIps: new Set<string>(),
+      testingNames: new Set<string>(),
+      serverReachable: false,
     }
   }
 }
 
 // Fast overview payload: current availability and current user name only.
 router.get('/overview', async (_req: Request, res: Response) => {
-  const { byIp, byName } = await getLiveMachineUsersByKey()
+  const { byIp, byName, knownIps, knownNames, testingIps, testingNames, serverReachable } =
+    await getLiveMachineUsersByKey()
 
   const [rows] = await pool.execute(`
     SELECT
@@ -93,6 +118,19 @@ router.get('/overview', async (_req: Request, res: Response) => {
     const liveUsersByName = byName.get(String(row.name).toLowerCase())
     const liveUsers = liveUsersByIp ?? liveUsersByName ?? []
 
+    const isKnown =
+      serverReachable &&
+      (knownIps.has(row.ip_address) || knownNames.has(String(row.name).toLowerCase()))
+
+    const isTesting =
+      testingIps.has(row.ip_address) || testingNames.has(String(row.name).toLowerCase())
+
+    const availabilityStatus: 'available' | 'unavailable' | 'out_of_service' = !isKnown
+      ? 'out_of_service'
+      : isTesting || row.availability_status === 'unavailable'
+        ? 'unavailable'
+        : 'available'
+
     return {
       id: row.id,
       name: row.name,
@@ -101,7 +139,7 @@ router.get('/overview', async (_req: Request, res: Response) => {
       current_user_id: row.active_user_id ?? null,
       current_user: row.active_username ?? null,
       current_users: liveUsers,
-      availability_status: row.availability_status,
+      availability_status: availabilityStatus,
     }
   })
 

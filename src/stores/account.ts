@@ -28,7 +28,7 @@ export const useAccountStore = defineStore('account', () => {
   const loggedIn = ref(false)
   const loginError = ref<string | null>(null)
   const loginLoading = ref(false)
-  const showAdminContent = ref(false)
+  const showAdminContent = ref(true)
 
   if (rawAccountCookie.value != undefined) // it is set
   {
