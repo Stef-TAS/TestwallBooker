@@ -8,6 +8,7 @@ import { storeToRefs } from 'pinia'
 import { useTestwallsStore, type TestwallWithAvailability } from '@/stores/testwalls'
 import { useAccountStore } from '@/stores/account'
 import { useSettingsStore } from '@/stores/settings'
+import { writeToClipboard } from '@/utils/clipboard'
 
 const defaultAvatarUrl = new URL('../data/avatar.png', import.meta.url).href
 const toast = useToast()
@@ -68,7 +69,7 @@ function buildClipboardText(row: TestwallWithAvailability): string {
 
 async function handleOverviewRowClick(row: TestwallWithAvailability) {
   try {
-    await navigator.clipboard.writeText(buildClipboardText(row))
+    await writeToClipboard(buildClipboardText(row))
     toast.add({
       severity: 'success',
       summary: 'Copied Testwall Info',

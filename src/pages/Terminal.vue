@@ -11,6 +11,7 @@ import { useTestwallsStore } from '../stores/testwalls'
 import { useCommandsStore, type Command } from '../stores/commands'
 import { useAccountStore } from '@/stores/account'
 import { useSettingsStore } from '@/stores/settings'
+import { writeToClipboard } from '@/utils/clipboard'
 const toast = useToast()
 
 const accountStore = useAccountStore()
@@ -18,7 +19,7 @@ const settingsStore = useSettingsStore()
 
 async function copyCommandToClipboard(commandName: string) {
   try {
-    await navigator.clipboard.writeText(commandName)
+    await writeToClipboard(commandName)
     visible.value = false
     TerminalService.emit('response', `Copied command to clipboard: ${commandName}`)
   } catch {

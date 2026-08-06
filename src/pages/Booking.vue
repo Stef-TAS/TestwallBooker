@@ -28,6 +28,7 @@ import { useAccountStore } from '@/stores/account'
 import { useBookings, type Booking as ApiBooking } from '@/composables/useBookings'
 import { useAccounts, type Account as ApiAccount } from '@/composables/useAccounts'
 import { useSettingsStore } from '@/stores/settings'
+import { writeToClipboard } from '@/utils/clipboard'
 
 const accountStore = useAccountStore()
 const settingsStore = useSettingsStore()
@@ -165,6 +166,67 @@ function normalizeStatus(value: string | undefined): string {
 
 function getUserOptionLabel(account: ApiAccount): string {
   return `${account.username} (${account.email})`
+}
+
+function escapeSqlString(value: string): string {
+  return value.replaceAll("'", "''")
+}
+
+function toSqlDatetime(value: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${value.getFullYear()}-${pad(value.getMonth() + 1)}-${pad(value.getDate())} ${pad(
+    value.getHours(),
+  )}:${pad(value.getMinutes())}:${pad(value.getSeconds())}`
+}
+
+function buildBookingClipboardText(booking: BookingHistory): string {
+  const lines = [
+    `Booking ID: ${booking.id}`,
+    `Testwall ID: ${booking.testwallId}`,
+    `Testwall: ${booking.testwallName}`,
+    `Start: ${booking.startDate.toLocaleString()}`,
+    `End: ${booking.endDate.toLocaleString()}`,
+    `Status: ${booking.status}`,
+    `User Email: ${booking.userEmail}`,
+  ]
+
+  if (accountStore.account?.isAdmin) {
+    lines.push('')
+    lines.push('-- Admin SQL ')
+    lines.push('')
+    lines.push('time format: yyyy-mm-dd hh:mm:ss')
+    lines.push('')
+    lines.push(
+      `UPDATE bookings SET testwall_id = ${booking.testwallId}, from_time = '${toSqlDatetime(booking.startDate)}', to_time = '${toSqlDatetime(booking.endDate)}', status = '${escapeSqlString(booking.status)}' WHERE id = ${booking.id};`,
+    )
+  }
+
+  return lines.join('\n')
+}
+
+async function handleBookingHistoryRowClick(booking: BookingHistory) {
+  try {
+    await writeToClipboard(buildBookingClipboardText(booking))
+    toast.add({
+      severity: 'success',
+      summary: 'Copied Booking Info',
+      detail: accountStore.account?.isAdmin
+        ? `Copied booking ${booking.id} details and SQL update statement to the clipboard.`
+        : `Copied booking ${booking.id} details to the clipboard.`,
+      life: 4000,
+    })
+  } catch (error) {
+    toast.add({
+      severity: 'error',
+      summary: 'Copy Failed',
+      detail: error instanceof Error ? error.message : 'Could not copy booking details.',
+      life: 5000,
+    })
+  }
+}
+
+function getBookingHistoryRowClass(): string {
+  return 'cursor-pointer [&>td]:transition-colors [&>td]:duration-150 hover:[&>td]:bg-slate-100/70 dark:hover:[&>td]:bg-slate-800/60'
 }
 
 async function loadUserOptions() {
@@ -681,6 +743,8 @@ async function handleFinishBooking() {
           :rows="5"
           :rowsPerPageOptions="[5, 10, 50, 100, 150]"
           :size="settingsStore.compactView ? 'small' : undefined"
+          :rowClass="getBookingHistoryRowClass"
+          @row-click="({ data }) => handleBookingHistoryRowClick(data)"
         >
           <Column field="id" header="BookingId" sortable />
           <Column field="testwallId" header="TestwallId" sortable />
@@ -722,7 +786,7 @@ async function handleFinishBooking() {
                 size="small"
                 v-if="data.status == 'active'"
                 :disabled="!canTerminateBooking(data) || terminatingBookingId === data.id"
-                @click="handleTerminateBooking(data.id)"
+                @click.stop="handleTerminateBooking(data.id)"
               />
             </template>
           </Column>
