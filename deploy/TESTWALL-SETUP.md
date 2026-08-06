@@ -109,6 +109,12 @@ curl -I http://127.0.0.1/api/testwalls
 
 Repeat this section for every physical testwall.
 
+Do these steps on the Windows testwall itself, not on the Linux server:
+
+1. Confirm the machine can reach the TestwallBooker server URL you plan to use.
+2. Make sure Python 3 is installed on the machine.
+3. Open a terminal in the `src/python` folder on that machine.
+
 Install Python dependencies on the testwall machine:
 
 ```powershell
@@ -130,6 +136,12 @@ Use the values like this:
 2. `server` must point to the live TestwallBooker server.
 3. `interval` controls how often the heartbeat is sent.
 
+At this point, the testwall is configured. The service will then:
+
+1. Read `service.cfg` from the same folder.
+2. Collect the machine name, IP address, logged-in users, and testing flag.
+3. Send that state to `server` every `interval` seconds.
+
 Install the Windows service from the `src/python` folder:
 
 ```powershell
@@ -142,7 +154,21 @@ Start the service:
 python testwall_heartbeat_service.py start
 ```
 
+To stop it later:
+
+```powershell
+python testwall_heartbeat_service.py stop
+```
+
+To remove it completely:
+
+```powershell
+python testwall_heartbeat_service.py remove
+```
+
 Verify the testwall is online in the app and that the machine is posting heartbeats.
+
+If you want to test the service without the UI, run the standalone client from the same folder or watch the service log file next to `testwall_heartbeat_service.py`.
 
 If the machine should show a testing state, create this file on that machine:
 
