@@ -381,7 +381,7 @@ function handleLogout() {
     </template>
   </Card>
 
-  <div>
+  <div :class="{ 'compact-page': settingsStore.compactView }">
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
       <Fieldset legend="Account information" class="w-full shadow-lg">
         <div class="flex flex-col text-sm p-2">
@@ -456,7 +456,10 @@ function handleLogout() {
 
             <div class="grid grid-cols-1 gap-3">
               <div class="flex items-center justify-between rounded-lg border px-3 py-2">
-                <span class="text-sm font-medium">Database Server</span>
+                <span class="flex items-center gap-2 text-sm font-medium">
+                  <i class="pi pi-database server-status-icon server-status-icon-mysql" />
+                  <span>Database Server</span>
+                </span>
                 <Tag :severity="databaseTagSeverity">
                   {{
                     serverStatusLoading
@@ -481,7 +484,10 @@ function handleLogout() {
               </p>
 
               <div class="flex items-center justify-between rounded-lg border px-3 py-2">
-                <span class="text-sm font-medium">Python Server</span>
+                <span class="flex items-center gap-2 text-sm font-medium">
+                  <i class="pi pi-code server-status-icon server-status-icon-python" />
+                  <span>Python Server</span>
+                </span>
                 <Tag :severity="pythonTagSeverity">
                   {{
                     serverStatusLoading ? 'Checking...' : pythonStatus?.running ? 'Running' : 'Down'
@@ -521,11 +527,16 @@ function handleLogout() {
       <Fieldset legend="Settings" class="w-full h-full shadow-lg">
         <div class="flex flex-col text-sm p-2">
           <div class="flex flex-col sm:flex-row items-start gap-4">
-            <img
-              :src="currentProfilePicture"
-              alt="profile picture"
-              class="rounded-xl shadow-lg w-full sm:w-2/5 object-cover shrink-0"
-            />
+            <div class="profile-preview-wrapper group w-full sm:w-2/5 aspect-square shrink-0">
+              <img
+                :src="currentProfilePicture"
+                alt="profile picture"
+                class="profile-preview-image"
+              />
+              <div class="profile-preview-overlay" aria-hidden="true">
+                <div class="profile-preview-cutout" />
+              </div>
+            </div>
             <div class="flex flex-col gap-2 flex-1">
               <FileUpload
                 ref="fu"
@@ -606,7 +617,7 @@ function handleLogout() {
                 </template>
                 <template #empty>
                   <div
-                    class="flex flex-col items-center gap-2 py-6 cursor-pointer"
+                    class="flex flex-col items-center gap-2 py-6 px-4 cursor-pointer rounded-xl border-2 border-dashed border-gray-400/60 shadow-md"
                     @click="onChoose"
                   >
                     <i class="pi pi-cloud-upload text-4xl text-muted-color" />
@@ -901,3 +912,58 @@ function handleLogout() {
     </div>
   </div>
 </template>
+
+<style scoped>
+.server-status-icon {
+  font-size: 1rem;
+}
+
+.server-status-icon-mysql {
+  color: #f59e0b;
+}
+
+.server-status-icon-python {
+  color: #3b82f6;
+}
+
+.profile-preview-wrapper {
+  position: relative;
+  overflow: hidden;
+  border-radius: 0.75rem;
+  box-shadow: var(--p-card-shadow);
+}
+
+.profile-preview-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.profile-preview-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+  background: rgba(15, 23, 42, 0.16);
+}
+
+.profile-preview-cutout {
+  width: 76%;
+  height: 76%;
+  border-radius: 9999px;
+  border: 2px dashed rgba(255, 255, 255, 0.85);
+  box-shadow:
+    0 0 0 999px rgba(17, 24, 39, 0.42),
+    0 0 36px 10px rgba(17, 24, 39, 0.35),
+    0 0 0 1px rgba(0, 0, 0, 0.2);
+}
+
+.group:hover .profile-preview-overlay {
+  opacity: 1;
+}
+</style>

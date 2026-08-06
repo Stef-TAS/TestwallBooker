@@ -2,8 +2,10 @@
 import { computed } from 'vue'
 import { Card, Divider, Fieldset, Tag } from 'primevue'
 import { useAccountStore } from '@/stores/account'
+import { useSettingsStore } from '@/stores/settings'
 
 const accountStore = useAccountStore()
+const settingsStore = useSettingsStore()
 const isAdmin = computed(() => accountStore.account?.isAdmin === true)
 
 const adminAccess = [
@@ -81,7 +83,7 @@ const limitsAndResponsibilities = [
 </script>
 
 <template>
-  <div class="max-w-6xl mx-auto pb-10">
+  <div :class="['max-w-6xl mx-auto pb-10', { 'compact-page': settingsStore.compactView }]">
     <Card class="relative overflow-hidden border border-red-500/20 shadow-xl mb-6">
       <template #content>
         <div class="absolute -top-24 -right-16 h-48 w-48 rounded-full bg-red-500/15 blur-2xl" />

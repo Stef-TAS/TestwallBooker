@@ -1,5 +1,8 @@
 <script lang="ts" setup>
+import { useSettingsStore } from '@/stores/settings'
 import { Card, Divider, Fieldset, Tag } from 'primevue'
+
+const settingsStore = useSettingsStore()
 
 const quickFacts = [
   {
@@ -80,7 +83,7 @@ const implementationNotes = [
 ]
 </script>
 <template>
-  <div class="max-w-6xl mx-auto pb-10">
+  <div :class="['max-w-6xl mx-auto pb-10', { 'compact-page': settingsStore.compactView }]">
     <Card class="relative overflow-hidden border border-cyan-500/20 shadow-xl mb-6">
       <template #content>
         <div class="absolute -top-24 -right-16 h-48 w-48 rounded-full bg-cyan-500/15 blur-2xl" />
