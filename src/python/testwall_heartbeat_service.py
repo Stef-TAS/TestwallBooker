@@ -1,10 +1,10 @@
 """Testwall heartbeat Windows service.
 
 Install and manage:
-    python service.py install    # install the service
-    python service.py start      # start it
-    python service.py stop       # stop it
-    python service.py remove     # uninstall it
+    python testwall_heartbeat_service.py install    # install the service
+    python testwall_heartbeat_service.py start      # start it
+    python testwall_heartbeat_service.py stop       # stop it
+    python testwall_heartbeat_service.py remove     # uninstall it
 
 Configuration is read from service.cfg (next to this file):
     [service]
