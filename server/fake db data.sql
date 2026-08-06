@@ -29,14 +29,14 @@ INSERT INTO accounts (
   timezone
 )
 VALUES
-  ('admin', 'admin@testwall.local', 'admin123', 'Avery', 'Stone', 'Stockholm, Sweden', 'Europe/Stockholm'),
-  ('alice', 'alice@testwall.local', 'password123', 'Alice', 'Nguyen', 'Berlin, Germany', 'Europe/Berlin'),
-  ('bob', 'bob@testwall.local', 'password123', 'Bob', 'Patel', 'London, UK', 'Europe/London'),
-  ('charlie', 'charlie@testwall.local', 'password123', 'Charlie', 'Johnson', 'New York, USA', 'America/New_York'),
-  ('dana', 'dana@testwall.local', 'password123', 'Dana', 'Lopez', 'Austin, USA', 'America/Chicago'),
-  ('elena', 'elena@testwall.local', 'password123', 'Elena', 'Petrov', 'Helsinki, Finland', 'Europe/Helsinki'),
-  ('farid', 'farid@testwall.local', 'password123', 'Farid', 'Khan', 'Dubai, UAE', 'Asia/Dubai'),
-  ('grace', 'grace@testwall.local', 'password123', 'Grace', 'Miller', 'Toronto, Canada', 'America/Toronto');
+  ('admin', 'admin@testwall.local', '$2b$12$QS5UZ1R76KeR.7CoSDVeDOqm3Gha5LXXqaPxyBU/P62w3SceJ2Ebm', 'Avery', 'Stone', 'Stockholm, Sweden', 'Europe/Stockholm'),
+  ('alice', 'alice@testwall.local', '$2b$12$ROkSIlNs77PlYJJ5JZ9JqeYyWHyiO6YY5O3zjrDeaRfJ03LFmXcBi', 'Alice', 'Nguyen', 'Berlin, Germany', 'Europe/Berlin'),
+  ('bob', 'bob@testwall.local', '$2b$12$ROkSIlNs77PlYJJ5JZ9JqeYyWHyiO6YY5O3zjrDeaRfJ03LFmXcBi', 'Bob', 'Patel', 'London, UK', 'Europe/London'),
+  ('charlie', 'charlie@testwall.local', '$2b$12$ROkSIlNs77PlYJJ5JZ9JqeYyWHyiO6YY5O3zjrDeaRfJ03LFmXcBi', 'Charlie', 'Johnson', 'New York, USA', 'America/New_York'),
+  ('dana', 'dana@testwall.local', '$2b$12$ROkSIlNs77PlYJJ5JZ9JqeYyWHyiO6YY5O3zjrDeaRfJ03LFmXcBi', 'Dana', 'Lopez', 'Austin, USA', 'America/Chicago'),
+  ('elena', 'elena@testwall.local', '$2b$12$ROkSIlNs77PlYJJ5JZ9JqeYyWHyiO6YY5O3zjrDeaRfJ03LFmXcBi', 'Elena', 'Petrov', 'Helsinki, Finland', 'Europe/Helsinki'),
+  ('farid', 'farid@testwall.local', '$2b$12$ROkSIlNs77PlYJJ5JZ9JqeYyWHyiO6YY5O3zjrDeaRfJ03LFmXcBi', 'Farid', 'Khan', 'Dubai, UAE', 'Asia/Dubai'),
+  ('grace', 'grace@testwall.local', '$2b$12$ROkSIlNs77PlYJJ5JZ9JqeYyWHyiO6YY5O3zjrDeaRfJ03LFmXcBi', 'Grace', 'Miller', 'Toronto, Canada', 'America/Toronto');
 
 SELECT id INTO @admin_user_id FROM accounts WHERE username = 'admin' LIMIT 1;
 SELECT id INTO @alice_user_id FROM accounts WHERE username = 'alice' LIMIT 1;

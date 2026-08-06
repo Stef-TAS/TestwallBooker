@@ -72,7 +72,7 @@ const adminWorkflows = [
 ]
 
 const limitsAndResponsibilities = [
-  'Current password validation is basic and should be treated as non-final security behavior.',
+  'Passwords are stored as bcrypt hashes; keep credentials strong and avoid sharing bootstrap admin accounts.',
   'The terminal is pseudo-terminal style and not a direct remote shell into physical hardware.',
   'Role-based visibility is implemented in the UI; production-grade backend authorization should remain a priority.',
   'Use admin privileges carefully: changes to users and scheduling can impact many teams at once.',

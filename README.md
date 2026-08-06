@@ -20,6 +20,8 @@ The project exists to solve a coordination problem across engineering teams:
 5. Exposes REST APIs under /api/* for frontend and integrations.
 6. Runs a Python sidecar process for testwall-related backend functionality.
 
+Passwords are stored as bcrypt hashes (configurable with BCRYPT_ROUNDS, default 12).
+
 ## Where It Lives
 
 1. Project/repository name: TestwallBooker
@@ -109,6 +111,53 @@ npm run dev
 
 1. Frontend: http://localhost:5173/booking/
 2. Backend health check example: http://localhost:3001/api/testwalls
+
+## First Account Setup
+
+Use one of the following approaches to create your first admin account.
+
+### Option A: UI registration, then assign admin role in SQL
+
+1. Start backend and frontend.
+2. Register an account from the login page.
+3. Open MySQL and run:
+
+```sql
+USE testwallbooker;
+
+SELECT id INTO @user_id FROM accounts WHERE email = 'your.email@company.com' LIMIT 1;
+SELECT id INTO @admin_role_id FROM access_rights WHERE role_name = 'admin' LIMIT 1;
+
+INSERT IGNORE INTO user_access_rights (user_id, access_right_id)
+VALUES (@user_id, @admin_role_id);
+```
+
+4. Log out and log back in so the new role is reflected in the UI.
+
+### Option B: Direct SQL bootstrap (account + admin role)
+
+1. Generate a bcrypt hash for your chosen password:
+
+```sh
+node -e "import bcrypt from 'bcryptjs'; bcrypt.hash('ChangeMe123!', 12).then(h => console.log(h))"
+```
+
+2. Use the printed hash in MySQL:
+
+```sql
+USE testwallbooker;
+
+INSERT INTO accounts (username, email, password_hash, first_name, last_name)
+VALUES ('admin', 'admin@company.com', '$2b$12$REPLACE_WITH_GENERATED_HASH', 'Admin', 'User');
+
+SELECT id INTO @admin_user_id FROM accounts WHERE email = 'admin@company.com' LIMIT 1;
+SELECT id INTO @admin_role_id FROM access_rights WHERE role_name = 'admin' LIMIT 1;
+
+INSERT IGNORE INTO user_access_rights (user_id, access_right_id)
+VALUES (@admin_user_id, @admin_role_id);
+```
+
+If you already have legacy plaintext passwords in the DB, successful login will automatically upgrade that account to bcrypt.
 
 ## Useful Commands
 

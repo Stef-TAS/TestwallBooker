@@ -73,7 +73,7 @@ const operationalValue = [
 ]
 
 const implementationNotes = [
-  'Password handling is currently basic and marked for secure hashing improvements.',
+  'Passwords are stored with bcrypt hashing and legacy plaintext records are upgraded on successful login.',
   'Overview availability currently comes from active booking windows plus optional live-machine user snapshots from the Python status endpoint.',
   'Terminal behavior is currently pseudo-terminal style, not a direct hardware shell.',
   'The Query page route exists but is currently minimal and not surfaced in the main sidebar actions.',

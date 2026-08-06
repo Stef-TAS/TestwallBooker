@@ -1,8 +1,38 @@
 import { Router } from 'express'
 import { pool } from '../db'
+import bcrypt from 'bcryptjs'
 import type { Request, Response } from 'express'
 
 const router = Router()
+const BCRYPT_ROUNDS = Number(process.env.BCRYPT_ROUNDS ?? 12)
+
+function isBcryptHash(value: string): boolean {
+  return /^\$2[aby]\$\d{2}\$/.test(value)
+}
+
+async function verifyAndMigratePassword(
+  userId: number,
+  storedPasswordHash: string,
+  passwordAttempt: string,
+): Promise<boolean> {
+  if (isBcryptHash(storedPasswordHash)) {
+    return bcrypt.compare(passwordAttempt, storedPasswordHash)
+  }
+
+  if (storedPasswordHash !== passwordAttempt) {
+    return false
+  }
+
+  try {
+    // One-time migration path for legacy plaintext records.
+    const upgradedHash = await bcrypt.hash(passwordAttempt, BCRYPT_ROUNDS)
+    await pool.execute('UPDATE accounts SET password_hash = ? WHERE id = ?', [upgradedHash, userId])
+  } catch (error) {
+    console.warn(`Failed to migrate plaintext password for user ${userId}:`, error)
+  }
+
+  return true
+}
 
 function normalizeProfilePicture(value: unknown): string | null {
   if (value === null || value === undefined) {
@@ -32,7 +62,7 @@ router.post('/login', async (req: Request, res: Response) => {
   try {
     // Find user by email
     const [users] = await pool.execute(
-      'SELECT id, username, email, first_name, last_name, location, timezone, profile_picture FROM accounts WHERE email = ?',
+      'SELECT id, username, email, password_hash, first_name, last_name, location, timezone, profile_picture FROM accounts WHERE email = ?',
       [email],
     )
 
@@ -43,14 +73,13 @@ router.post('/login', async (req: Request, res: Response) => {
 
     const user = (users as any[])[0]
 
-    // TODO: Use bcrypt to verify password hash
-    // For now, compare plain text (NOT SECURE - fix this!)
-    const [passwordCheck] = await pool.execute(
-      'SELECT password_hash FROM accounts WHERE email = ? AND password_hash = ?',
-      [email, password],
+    const passwordValid = await verifyAndMigratePassword(
+      Number(user.id),
+      String(user.password_hash),
+      password,
     )
 
-    if ((passwordCheck as any[]).length === 0) {
+    if (!passwordValid) {
       res.status(401).json({ error: 'Invalid email or password' })
       return
     }

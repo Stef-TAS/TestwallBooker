@@ -1,8 +1,10 @@
 import { Router } from 'express'
 import { pool } from '../db'
+import bcrypt from 'bcryptjs'
 import type { Request, Response } from 'express'
 
 const router = Router()
+const BCRYPT_ROUNDS = Number(process.env.BCRYPT_ROUNDS ?? 12)
 
 function normalizeProfilePicture(value: unknown): string | null {
   if (value === null || value === undefined) {
@@ -97,13 +99,14 @@ router.post('/register', async (req: Request, res: Response) => {
   }
 
   try {
-    // TODO: Hash password with bcrypt before storing
+    const passwordHash = await bcrypt.hash(String(password), BCRYPT_ROUNDS)
+
     await pool.execute(
       'INSERT INTO accounts (username, email, password_hash, first_name, last_name, location, timezone) VALUES (?, ?, ?, ?, ?, ?, ?)',
       [
         username,
         email,
-        password,
+        passwordHash,
         first_name ?? null,
         last_name ?? null,
         location ?? null,
