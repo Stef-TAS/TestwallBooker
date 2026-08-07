@@ -98,6 +98,7 @@ const NoTestWallAccessToolTip =
     </Transition>
     <Button
       class="quick-links-toggle"
+      :class="{ 'quick-links-toggle--active': linksMenuOpen }"
       severity="contrast"
       :label="linksMenuOpen ? 'Close Links' : 'Open Links'"
       icon="pi pi-external-link"
@@ -237,7 +238,7 @@ const NoTestWallAccessToolTip =
         <p class="text-4xl text-blue-600 dark:text-sky-400">Wall Test Facility</p>
         <p class="opacity-50">The internal booking system for all currently available Testwalls</p>
         <Divider class="mb-8">Login</Divider>
-        <div>
+        <form @submit.prevent="login">
           <FloatLabel class="mb-8">
             <InputText id="account_Email" v-model="AccountEmail" class="w-full" />
             <label for="account_Email">Email</label>
@@ -261,13 +262,13 @@ const NoTestWallAccessToolTip =
             <label for="account_Email">Password</label>
           </FloatLabel>
           <Button
+            type="submit"
             class="w-full"
             :disabled="AccountEmail.length == 0 || AccountPassword.length == 0"
-            @click="login"
             >Login</Button
           >
           <span class="text-red-400 block text-center mt-2">{{ loginStatus }}</span>
-        </div>
+        </form>
       </template>
     </Card>
   </div>
@@ -332,10 +333,122 @@ const NoTestWallAccessToolTip =
 .quick-link-button {
   width: 100%;
   justify-content: flex-start;
+  transition:
+    transform 140ms ease,
+    box-shadow 180ms ease,
+    border-color 180ms ease;
+}
+
+.quick-link-button:hover {
+  transform: translateX(2px);
+  box-shadow: 0 6px 14px rgb(0 0 0 / 0.14);
 }
 
 .quick-links-toggle {
-  box-shadow: 0 8px 18px rgb(0 0 0 / 0.2);
+  position: relative;
+  overflow: hidden;
+  border: 1px solid color-mix(in oklab, var(--p-primary-color) 45%, transparent);
+  box-shadow:
+    0 8px 18px rgb(0 0 0 / 0.2),
+    0 0 0 1px color-mix(in oklab, var(--p-primary-color) 24%, transparent),
+    0 0 22px color-mix(in oklab, var(--p-primary-color) 38%, transparent);
+  animation: quick-links-wiggle 6.5s ease-in-out infinite;
+  transition:
+    transform 140ms ease,
+    box-shadow 200ms ease,
+    border-color 200ms ease;
+}
+
+.quick-links-toggle::after {
+  content: '';
+  position: absolute;
+  left: -130%;
+  top: 2px;
+  width: 120%;
+  height: 8px;
+  background: repeating-linear-gradient(
+    90deg,
+    color-mix(in oklab, var(--p-primary-color) 10%, transparent) 0 12px,
+    color-mix(in oklab, var(--p-primary-color) 92%, white) 12px 38px
+  );
+  border-radius: 999px;
+  opacity: 0;
+  pointer-events: none;
+  animation: quick-links-dash-sweep 3.4s ease-in-out infinite;
+}
+
+.quick-links-toggle:hover {
+  animation-play-state: paused;
+  transform: translateY(-1px);
+  box-shadow:
+    0 10px 24px rgb(0 0 0 / 0.26),
+    0 0 0 1px color-mix(in oklab, var(--p-primary-color) 36%, transparent),
+    0 0 28px color-mix(in oklab, var(--p-primary-color) 55%, transparent);
+}
+
+.quick-links-toggle:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--p-primary-color) 60%, white);
+  outline-offset: 2px;
+}
+
+.quick-links-toggle--active {
+  box-shadow:
+    0 10px 24px rgb(0 0 0 / 0.26),
+    0 0 0 1px color-mix(in oklab, var(--p-primary-color) 40%, transparent),
+    0 0 30px color-mix(in oklab, var(--p-primary-color) 62%, transparent);
+}
+
+@keyframes quick-links-wiggle {
+  0%,
+  84%,
+  100% {
+    transform: translateX(0) rotate(0deg);
+  }
+
+  87% {
+    transform: translateX(-1px) rotate(-1.2deg);
+  }
+
+  90% {
+    transform: translateX(1px) rotate(1.2deg);
+  }
+
+  93% {
+    transform: translateX(-0.5px) rotate(-0.6deg);
+  }
+}
+
+@keyframes quick-links-dash-sweep {
+  0% {
+    left: -130%;
+    opacity: 0;
+  }
+
+  10% {
+    opacity: 1;
+  }
+
+  35% {
+    left: 110%;
+    opacity: 1;
+  }
+
+  50%,
+  100% {
+    left: 110%;
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .quick-links-toggle {
+    animation: none;
+  }
+
+  .quick-links-toggle::after {
+    animation: none;
+    opacity: 0;
+  }
 }
 
 .quick-links-menu-enter-active,
