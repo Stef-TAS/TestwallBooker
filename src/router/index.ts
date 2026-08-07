@@ -7,6 +7,7 @@ import Query from '@/pages/Query.vue'
 import Terminal from '@/pages/Terminal.vue'
 import Tutorial from '@/pages/Tutorial.vue'
 import { createRouter, createWebHistory } from 'vue-router'
+import Waldies from '@/pages/Waldies.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -20,6 +21,7 @@ const router = createRouter({
     { path: '/about', component: About },
     { path: '/admin-guide', component: AdminGuide },
     { path: '/tutorial', component: Tutorial },
+    { path: '/waldies', component: Waldies },
   ],
 })
 

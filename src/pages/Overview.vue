@@ -27,7 +27,7 @@ const autoRefresh = ref(false)
 
 function startRefresh() {
   stopRefresh()
-  refreshTimer = setInterval(() => void loadOverview(), REFRESH_INTERVAL_MS)
+  refreshTimer = setInterval(() => void loadOverview(true), REFRESH_INTERVAL_MS)
 }
 
 function stopRefresh() {
@@ -92,7 +92,7 @@ function getOverviewRowClass(): string {
   return 'cursor-pointer [&>td]:transition-colors [&>td]:duration-150 hover:[&>td]:bg-slate-100/70 dark:hover:[&>td]:bg-slate-800/60'
 }
 
-onMounted(() => void loadOverview())
+onMounted(() => void loadOverview(true))
 onUnmounted(() => stopRefresh())
 </script>
 <template>
@@ -131,7 +131,7 @@ onUnmounted(() => stopRefresh())
                 size="small"
                 severity="secondary"
                 :loading="isOverviewLoading"
-                @click="() => loadOverview()"
+                @click="() => loadOverview(true)"
               />
             </div>
           </div>
@@ -206,7 +206,25 @@ onUnmounted(() => stopRefresh())
         </Column>
         <Column header="Current Machine Users">
           <template #body="{ data }">
-            <span v-if="data.currentUsers.length > 0">{{ data.currentUsers.join(', ') }}</span>
+            <div
+              v-if="data.currentUsersWithProfiles.length > 0"
+              class="flex flex-wrap items-center gap-2"
+            >
+              <span
+                v-for="machineUser in data.currentUsersWithProfiles"
+                :key="machineUser.name"
+                class="inline-flex items-center gap-2 rounded-full border border-surface-300 bg-surface-0 px-2 py-1 dark:bg-surface-900"
+              >
+                <Skeleton v-if="isOverviewProfilePicturesLoading" shape="circle" size="1.5rem" />
+                <img
+                  v-else
+                  :src="machineUser.profilePicture || defaultAvatarUrl"
+                  :alt="`profile picture of ${machineUser.name}`"
+                  class="h-6 w-6 rounded-full object-cover border border-surface-300"
+                />
+                <span>{{ machineUser.name }}</span>
+              </span>
+            </div>
             <span v-else class="text-muted-color">-</span>
           </template>
         </Column>

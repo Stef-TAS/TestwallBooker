@@ -13,6 +13,7 @@ export type TestwallWithAvailability = Testwall & {
   availabilityStatus: 'available' | 'unavailable' | 'out_of_service'
   currentUser?: string
   currentUsers: string[]
+  currentUsersWithProfiles: Array<{ name: string; profilePicture: string | null }>
   currentUserId?: number | null
   currentUserProfilePicture?: string | null
 }
@@ -26,6 +27,66 @@ type OverviewRow = {
   current_user: string | null
   current_users?: string[]
   availability_status: 'available' | 'unavailable' | 'out_of_service'
+}
+
+type ProfilePictureLookupResponse = {
+  byId?: Record<string, string | null>
+  byUsername?: Record<string, string | null>
+}
+
+function buildUsernameLookupKeys(value: string): string[] {
+  const normalized = value.trim().toLowerCase()
+  if (!normalized) {
+    return []
+  }
+
+  const keys = new Set<string>([normalized])
+  const slashParts = normalized.split(/\\|\//).filter(Boolean)
+  const lastSlashPart = slashParts.at(-1)
+  if (slashParts.length > 1 && lastSlashPart) {
+    keys.add(lastSlashPart)
+  }
+
+  const atIndex = normalized.indexOf('@')
+  if (atIndex > 0) {
+    keys.add(normalized.slice(0, atIndex))
+  }
+
+  return Array.from(keys)
+}
+
+function isStringNullableRecord(value: unknown): value is Record<string, string | null> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return false
+  }
+
+  return Object.values(value).every((item) => item === null || typeof item === 'string')
+}
+
+function isProfilePictureLookupResponse(value: unknown): value is ProfilePictureLookupResponse {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return false
+  }
+
+  const record = value as Record<string, unknown>
+  const byIdValid = record.byId === undefined || isStringNullableRecord(record.byId)
+  const byUsernameValid =
+    record.byUsername === undefined || isStringNullableRecord(record.byUsername)
+
+  return byIdValid && byUsernameValid
+}
+
+function findProfilePictureByUsername(
+  username: string,
+  byUsername: Record<string, string | null>,
+): string | null {
+  for (const key of buildUsernameLookupKeys(username)) {
+    if (Object.prototype.hasOwnProperty.call(byUsername, key)) {
+      return byUsername[key] ?? null
+    }
+  }
+
+  return null
 }
 
 export type Booking = {
@@ -79,6 +140,9 @@ export const useTestwallsStore = defineStore('testwalls', () => {
         availabilityStatus,
         currentUser: activeBooking?.username,
         currentUsers: activeBooking?.username ? [activeBooking.username] : [],
+        currentUsersWithProfiles: activeBooking?.username
+          ? [{ name: activeBooking.username, profilePicture: null }]
+          : [],
         currentUserProfilePicture: null,
       }
     })
@@ -132,6 +196,9 @@ export const useTestwallsStore = defineStore('testwalls', () => {
       availabilityStatus,
       currentUser: row.current_user ?? undefined,
       currentUsers: Array.isArray(row.current_users) ? row.current_users : [],
+      currentUsersWithProfiles: Array.isArray(row.current_users)
+        ? row.current_users.map((name) => ({ name, profilePicture: null }))
+        : [],
       currentUserId: row.current_user_id,
       currentUserProfilePicture: null,
     }
@@ -139,10 +206,6 @@ export const useTestwallsStore = defineStore('testwalls', () => {
 
   async function loadOverview(force = false) {
     if (isOverviewLoading.value) {
-      return
-    }
-
-    if (hasOverviewLoaded.value && !force) {
       return
     }
 
@@ -176,7 +239,15 @@ export const useTestwallsStore = defineStore('testwalls', () => {
       ),
     )
 
-    if (userIds.length === 0) {
+    const machineUsernames = Array.from(
+      new Set(
+        overviewRows.value
+          .flatMap((row) => row.currentUsers)
+          .filter((username): username is string => username.trim().length > 0),
+      ),
+    )
+
+    if (userIds.length === 0 && machineUsernames.length === 0) {
       isOverviewProfilePicturesLoading.value = false
       return
     }
@@ -184,21 +255,46 @@ export const useTestwallsStore = defineStore('testwalls', () => {
     try {
       isOverviewProfilePicturesLoading.value = true
 
-      const response = await fetch(`/api/accounts/profile-pictures?ids=${userIds.join(',')}`)
+      const params = new URLSearchParams()
+      if (userIds.length > 0) {
+        params.set('ids', userIds.join(','))
+      }
+      if (machineUsernames.length > 0) {
+        params.set('usernames', machineUsernames.join(','))
+      }
+
+      const response = await fetch(`/api/accounts/profile-pictures?${params.toString()}`)
       if (!response.ok) {
         throw new Error(`Failed to fetch profile pictures: ${response.status}`)
       }
 
-      const pictureByUserId = (await response.json()) as Record<string, string | null>
-      overviewRows.value = overviewRows.value.map((row) => {
-        if (!row.currentUserId) {
-          return row
-        }
+      const payload = (await response.json()) as unknown
+      const pictureByUserId: Record<string, string | null> = {}
+      const pictureByUsername: Record<string, string | null> = {}
 
-        const profilePicture = pictureByUserId[String(row.currentUserId)] ?? null
+      if (isProfilePictureLookupResponse(payload)) {
+        Object.assign(pictureByUserId, payload.byId ?? {})
+        Object.assign(pictureByUsername, payload.byUsername ?? {})
+      } else if (isStringNullableRecord(payload)) {
+        Object.assign(pictureByUserId, payload)
+      }
+
+      overviewRows.value = overviewRows.value.map((row) => {
+        const profilePictureById = row.currentUserId
+          ? (pictureByUserId[String(row.currentUserId)] ?? null)
+          : null
+        const profilePictureByName = row.currentUser
+          ? findProfilePictureByUsername(row.currentUser, pictureByUsername)
+          : null
+        const profilePicture = profilePictureById ?? profilePictureByName ?? null
+
         return {
           ...row,
           currentUserProfilePicture: profilePicture,
+          currentUsersWithProfiles: row.currentUsers.map((name) => ({
+            name,
+            profilePicture: findProfilePictureByUsername(name, pictureByUsername),
+          })),
         }
       })
     } catch {

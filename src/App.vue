@@ -58,6 +58,19 @@ async function login() {
 const mask = ref(true)
 
 const sidebarOpen = ref(true)
+const linksMenuOpen = ref(false)
+
+const quickLinks = [
+  { label: 'phpMyAdmin', href: 'http://c-l-twc-001/phpmyadmin/' },
+  { label: 'Testwall API Docs', href: 'http://c-l-twc-001/tw_api/html/testwall-docs/index.html' },
+  { label: 'PrimeVue Docs', href: 'https://primevue.org' },
+  { label: 'Vite Docs', href: 'https://vite.dev/guide/' },
+]
+
+function openQuickLink(url: string) {
+  window.open(url, '_blank', 'noopener,noreferrer')
+  linksMenuOpen.value = false
+}
 
 const canAccessTerminal = ref(true)
 const TerminalToolTip =
@@ -68,6 +81,29 @@ const NoTestWallAccessToolTip =
 </script>
 
 <template>
+  <div class="quick-links-panel" @mouseleave="linksMenuOpen = false">
+    <Transition name="quick-links-menu">
+      <div v-if="linksMenuOpen" class="quick-links-dropdown">
+        <Button
+          v-for="link in quickLinks"
+          :key="link.href"
+          class="quick-link-button"
+          severity="secondary"
+          outlined
+          @click="openQuickLink(link.href)"
+        >
+          {{ link.label }}
+        </Button>
+      </div>
+    </Transition>
+    <Button
+      class="quick-links-toggle"
+      severity="contrast"
+      :label="linksMenuOpen ? 'Close Links' : 'Open Links'"
+      icon="pi pi-external-link"
+      @click="linksMenuOpen = !linksMenuOpen"
+    />
+  </div>
   <div v-if="accountStore.loggedIn">
     <SidebarLayout>
       <Sidebar id="mainsidebar" v-model:open="sidebarOpen" :overlay="false" collapsible="icon">
@@ -155,14 +191,14 @@ const NoTestWallAccessToolTip =
                     <SidebarMenuItem>
                       <div class="flex items-center gap-2 w-full">
                         <SidebarMenuButton
-                          @click="$router.push('/terminal')"
+                          @click="$router.push('/waldies')"
                           :disabled="
                             canAccessTerminal == false || accountStore.account?.canTestwall == false
                           "
                           class="flex-1"
                         >
                           <Code />
-                          <span>Pseudo Terminal</span>
+                          <span>Waldies</span>
                         </SidebarMenuButton>
                         <Info
                           v-if="canAccessTerminal == false"
@@ -263,5 +299,64 @@ const NoTestWallAccessToolTip =
   opacity: 0;
   margin-left: 0;
   pointer-events: none;
+}
+
+.quick-links-panel {
+  position: fixed;
+  left: 1rem;
+  bottom: 1rem;
+  z-index: 1200;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.quick-links-dropdown {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  background: var(--p-surface-0);
+  border: 1px solid var(--p-surface-200);
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 24px rgb(0 0 0 / 0.16);
+  padding: 0.625rem;
+  min-width: 11rem;
+}
+
+.dark .quick-links-dropdown {
+  background: var(--p-surface-900);
+  border-color: var(--p-surface-700);
+}
+
+.quick-link-button {
+  width: 100%;
+  justify-content: flex-start;
+}
+
+.quick-links-toggle {
+  box-shadow: 0 8px 18px rgb(0 0 0 / 0.2);
+}
+
+.quick-links-menu-enter-active,
+.quick-links-menu-leave-active {
+  transition: all 180ms ease;
+}
+
+.quick-links-menu-enter-from,
+.quick-links-menu-leave-to {
+  opacity: 0;
+  transform: translateY(10px) scale(0.96);
+}
+
+@media (max-width: 640px) {
+  .quick-links-panel {
+    left: 0.75rem;
+    bottom: 0.75rem;
+  }
+
+  .quick-links-dropdown {
+    min-width: 9.5rem;
+  }
 }
 </style>

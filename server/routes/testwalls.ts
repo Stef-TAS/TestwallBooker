@@ -9,6 +9,26 @@ type MachineStatus = {
   ip?: string
   users?: string[]
   testing?: boolean
+  last_update_utc?: string
+}
+
+const MACHINE_STATUS_STALE_AFTER_SECONDS = (() => {
+  const configured = Number(process.env.MACHINE_STATUS_STALE_AFTER_SECONDS ?? 20)
+  return Number.isFinite(configured) && configured > 0 ? configured : 20
+})()
+
+function isMachineStatusFresh(machine: MachineStatus): boolean {
+  if (typeof machine.last_update_utc !== 'string' || machine.last_update_utc.trim().length === 0) {
+    return false
+  }
+
+  const lastUpdateMs = Date.parse(machine.last_update_utc)
+  if (!Number.isFinite(lastUpdateMs)) {
+    return false
+  }
+
+  const ageMs = Date.now() - lastUpdateMs
+  return ageMs >= 0 && ageMs <= MACHINE_STATUS_STALE_AFTER_SECONDS * 1000
 }
 
 async function getLiveMachineUsersByKey() {
@@ -42,6 +62,10 @@ async function getLiveMachineUsersByKey() {
     const testingNames = new Set<string>()
 
     for (const machine of machines) {
+      if (!isMachineStatusFresh(machine)) {
+        continue
+      }
+
       const users = Array.isArray(machine.users)
         ? machine.users.filter(
             (user): user is string => typeof user === 'string' && user.trim().length > 0,

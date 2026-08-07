@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# setup-phpmyadmin-offline.sh — download on laptop, then install on offline server
+# setup-phpmyadmin-offline.sh -- download on laptop, then install on offline server
 # Usage:
 #   bash deploy/setup-phpmyadmin-offline.sh user@host [local-bundle-dir]
 #
@@ -7,12 +7,16 @@
 # - local-bundle-dir: .deploy-offline/phpmyadmin
 # - PMA_PATH: /pma
 # - PMA_VERSION: 5.2.2
+# - DOWNLOAD_METHOD: auto (host|wsl|helper|docker|auto)
+# - SKIP_RPMS: 0 (download and install PHP runtime RPMs offline)
+# - HELPER_TARGET: optional online RHEL helper (user@host) for RPM download when laptop lacks dnf/yumdownloader
+# - WSL_DISTRO: optional WSL distro name that has dnf (defaults to RockyLinux)
+# - PMA_ARCHIVE: optional local phpMyAdmin archive (.zip, .tar.gz, .tgz, .tar.xz, .tar.bz2)
 #
 # Behavior:
 # 1) Detect server RHEL major version over SSH
-# 2) Download required PHP RPMs on laptop using Docker (matching Rocky image)
-# 3) Download phpMyAdmin tarball on laptop
-# 4) Transfer bundle to server and install without internet
+# 2) Download phpMyAdmin tarball (and optional PHP RPMs)
+# 3) Transfer bundle to server and install without internet
 
 set -euo pipefail
 
@@ -33,6 +37,11 @@ LOCAL_BUNDLE_DIR="${2:-.deploy-offline/phpmyadmin}"
 PMA_PATH="${PMA_PATH:-/pma}"
 PMA_VERSION="${PMA_VERSION:-5.2.2}"
 SKIP_DOWNLOAD="${SKIP_DOWNLOAD:-0}"
+DOWNLOAD_METHOD="${DOWNLOAD_METHOD:-auto}"
+SKIP_RPMS="${SKIP_RPMS:-0}"
+HELPER_TARGET="${HELPER_TARGET:-}"
+WSL_DISTRO="${WSL_DISTRO:-RockyLinux}"
+PMA_ARCHIVE="${PMA_ARCHIVE:-}"
 REMOTE_STAGE_DIR="/opt/phpmyadmin-offline"
 REMOTE_RHEL_MAJOR=""
 
@@ -52,6 +61,10 @@ SUDO_PASSWORD="${SUDO_PASSWORD%$'\r'}"
 SSH_KEY_PATH="${SSH_KEY_PATH:-$HOME/.ssh/testwallbooker_deploy}"
 SSH_PUBLIC_KEY="${SSH_KEY_PATH}.pub"
 SSH_OPTS=(-i "$SSH_KEY_PATH" -o ConnectTimeout=12 -o StrictHostKeyChecking=accept-new)
+
+HELPER_SSH_KEY_PATH="${HELPER_SSH_KEY_PATH:-$SSH_KEY_PATH}"
+HELPER_SSH_OPTS=(-i "$HELPER_SSH_KEY_PATH" -o ConnectTimeout=12 -o StrictHostKeyChecking=accept-new)
+HELPER_SUDO_PASSWORD="${HELPER_SUDO_PASSWORD:-}"
 
 if [[ ! -f "$SSH_KEY_PATH" || ! -f "$SSH_PUBLIC_KEY" ]]; then
   mkdir -p "$(dirname "$SSH_KEY_PATH")"
@@ -77,6 +90,16 @@ ssh_sudo() {
   ssh "${SSH_OPTS[@]}" "$TARGET" "sudo -S -p '' bash -lc $(printf '%q' "$remote_command")" <<<"$SUDO_PASSWORD"
 }
 
+helper_ssh_run() {
+  local remote_command="$1"
+  ssh "${HELPER_SSH_OPTS[@]}" "$HELPER_TARGET" "$remote_command"
+}
+
+helper_ssh_sudo() {
+  local remote_command="$1"
+  ssh "${HELPER_SSH_OPTS[@]}" "$HELPER_TARGET" "sudo -S -p '' bash -lc $(printf '%q' "$remote_command")" <<<"$HELPER_SUDO_PASSWORD"
+}
+
 validate_sudo_access() {
   step "1/9  Validating sudo credentials on target..."
 
@@ -98,6 +121,27 @@ validate_sudo_access() {
   fatal "Sudo authentication failed. Re-run and verify sudo password for ${TARGET}."
 }
 
+validate_helper_sudo_access_if_needed() {
+  if [[ -z "$HELPER_TARGET" ]]; then
+    return
+  fi
+
+  step "1b/9  Validating helper sudo credentials on ${HELPER_TARGET}..."
+
+  if [[ -z "$HELPER_SUDO_PASSWORD" ]]; then
+    read -r -s -p "Sudo password for helper ${HELPER_TARGET}: " HELPER_SUDO_PASSWORD
+    echo
+    HELPER_SUDO_PASSWORD="${HELPER_SUDO_PASSWORD%$'\r'}"
+  fi
+
+  if helper_ssh_sudo "true" >/dev/null 2>&1; then
+    ok "Helper sudo authentication successful"
+    return
+  fi
+
+  fatal "Helper sudo authentication failed for ${HELPER_TARGET}."
+}
+
 detect_remote_platform() {
   step "2/9  Detecting target OS/version..."
 
@@ -106,11 +150,49 @@ detect_remote_platform() {
   REMOTE_RHEL_MAJOR="${version_id%%.*}"
 
   if [[ -z "$REMOTE_RHEL_MAJOR" || ! "$REMOTE_RHEL_MAJOR" =~ ^[0-9]+$ ]]; then
-    warn "Could not detect VERSION_ID from /etc/os-release; defaulting bundle base image to Rocky Linux 9."
+    warn "Could not detect VERSION_ID from /etc/os-release; defaulting download target to RHEL 9."
     REMOTE_RHEL_MAJOR="9"
   fi
 
   info "Detected target RHEL major version: ${REMOTE_RHEL_MAJOR}"
+}
+
+preflight_target_runtime_for_skip_rpms() {
+  if [[ "$SKIP_RPMS" != "1" ]]; then
+    return
+  fi
+
+  step "2b/9  Checking target runtime prerequisites for SKIP_RPMS=1..."
+
+  local check_cmd
+  check_cmd="$(cat <<'REMOTE'
+set -euo pipefail
+
+missing=''
+command -v php >/dev/null 2>&1 || missing="${missing} php"
+command -v php-fpm >/dev/null 2>&1 || missing="${missing} php-fpm"
+command -v nginx >/dev/null 2>&1 || missing="${missing} nginx"
+
+if command -v php >/dev/null 2>&1; then
+  if ! php -m 2>/dev/null | grep -qiE '^mysqli$|^pdo_mysql$'; then
+    missing="${missing} php-mysqlnd"
+  fi
+fi
+
+if [[ -n "$missing" ]]; then
+  echo "Missing target packages for SKIP_RPMS=1:${missing}"
+  exit 1
+fi
+
+echo "ok"
+REMOTE
+)"
+
+  if ! ssh_sudo "$check_cmd" >/dev/null; then
+    fatal "Target is missing required runtime packages for SKIP_RPMS=1. Install php, php-fpm, php-mysqlnd and nginx on the server, or rerun with SKIP_RPMS=0 and provide offline RPMs."
+  fi
+
+  ok "Target runtime prerequisites are present"
 }
 
 prepare_bundle_on_laptop() {
@@ -121,36 +203,284 @@ prepare_bundle_on_laptop() {
     return
   fi
 
-  command -v docker >/dev/null 2>&1 || fatal "Docker is required locally to build the offline RPM bundle."
-  docker info >/dev/null 2>&1 || fatal "Docker daemon is not reachable. Start Docker Desktop and retry."
-
   rm -rf "$LOCAL_BUNDLE_DIR"
   mkdir -p "$LOCAL_BUNDLE_DIR/rpms"
 
   local bundle_abs
   bundle_abs="$(cd "$LOCAL_BUNDLE_DIR" && pwd)"
 
-  local container_image
-  if [[ "$REMOTE_RHEL_MAJOR" == "8" ]]; then
-    container_image="rockylinux:8"
-  else
-    container_image="rockylinux:9"
+  resolve_local_input_path() {
+    local raw_path="$1"
+    if [[ -f "$raw_path" ]]; then
+      printf '%s\n' "$raw_path"
+      return 0
+    fi
+    if command -v cygpath >/dev/null 2>&1; then
+      local converted
+      converted="$(cygpath -u "$raw_path" 2>/dev/null || true)"
+      if [[ -n "$converted" && -f "$converted" ]]; then
+        printf '%s\n' "$converted"
+        return 0
+      fi
+    fi
+    return 1
+  }
+
+  stage_phpmyadmin_tarball() {
+    local out_tar="$bundle_abs/phpMyAdmin-${PMA_VERSION}-all-languages.tar.gz"
+
+    if [[ -n "$PMA_ARCHIVE" ]]; then
+      local archive_path
+      archive_path="$(resolve_local_input_path "$PMA_ARCHIVE" || true)"
+      [[ -n "$archive_path" ]] || fatal "PMA_ARCHIVE was set, but file was not found: $PMA_ARCHIVE"
+
+      local unpack_dir="$bundle_abs/.pma-unpack"
+      rm -rf "$unpack_dir"
+      mkdir -p "$unpack_dir"
+
+      case "${archive_path,,}" in
+        *.zip)
+          if command -v unzip >/dev/null 2>&1; then
+            unzip -q "$archive_path" -d "$unpack_dir"
+          elif command -v bsdtar >/dev/null 2>&1; then
+            bsdtar -xf "$archive_path" -C "$unpack_dir"
+          elif command -v powershell.exe >/dev/null 2>&1; then
+            powershell.exe -NoProfile -Command "Expand-Archive -LiteralPath '$archive_path' -DestinationPath '$unpack_dir' -Force" >/dev/null
+          else
+            fatal "Cannot extract .zip archive. Install unzip or bsdtar."
+          fi
+          ;;
+        *.tar.gz|*.tgz)
+          tar -xzf "$archive_path" -C "$unpack_dir"
+          ;;
+        *.tar.xz)
+          tar -xJf "$archive_path" -C "$unpack_dir"
+          ;;
+        *.tar.bz2)
+          tar -xjf "$archive_path" -C "$unpack_dir"
+          ;;
+        *.tar)
+          tar -xf "$archive_path" -C "$unpack_dir"
+          ;;
+        *)
+          fatal "Unsupported PMA_ARCHIVE format: $archive_path"
+          ;;
+      esac
+
+      local src_dir
+      src_dir="$(find "$unpack_dir" -mindepth 1 -maxdepth 3 -type f -name index.php -printf '%h\n' | head -n1 || true)"
+      [[ -n "$src_dir" ]] || fatal "Could not locate phpMyAdmin content inside PMA_ARCHIVE."
+
+      rm -f "$out_tar"
+      tar -czf "$out_tar" -C "$(dirname "$src_dir")" "$(basename "$src_dir")"
+      rm -rf "$unpack_dir"
+      ok "Using local phpMyAdmin archive from ${archive_path}"
+      return
+    fi
+
+    command -v curl >/dev/null 2>&1 || fatal "curl is required to download phpMyAdmin tarball."
+    curl -fsSL "https://files.phpmyadmin.net/phpMyAdmin/${PMA_VERSION}/phpMyAdmin-${PMA_VERSION}-all-languages.tar.gz" \
+      -o "$out_tar"
+  }
+
+  if [[ "$SKIP_RPMS" == "1" ]]; then
+    warn "SKIP_RPMS=1 set; skipping local RPM download."
+    stage_phpmyadmin_tarball
+    ok "Offline bundle downloaded to ${LOCAL_BUNDLE_DIR}"
+    return
   fi
 
-  info "Using container image ${container_image} to download matching RPMs"
+  download_with_helper_machine() {
+    [[ -n "$HELPER_TARGET" ]] || fatal "DOWNLOAD_METHOD=helper requires HELPER_TARGET=user@host."
+    info "Using helper machine ${HELPER_TARGET} to build RPM bundle"
+    validate_helper_sudo_access_if_needed
 
-  docker run --rm \
-    -v "${bundle_abs}:/bundle" \
-    "$container_image" \
-    bash -lc "
+    local helper_stage="/tmp/pma-offline-${USER:-user}-$$"
+    local helper_cmd
+
+    if ! helper_ssh_run "echo ok" >/dev/null 2>&1; then
+      fatal "Cannot reach HELPER_TARGET ${HELPER_TARGET} via SSH."
+    fi
+
+    helper_ssh_run "rm -rf '$helper_stage' && mkdir -p '$helper_stage/rpms'"
+
+    if ! helper_ssh_run "dnf download --help >/dev/null 2>&1"; then
+      helper_ssh_sudo "dnf -y install dnf-plugins-core --disablerepo='mysql-*' --setopt=*.skip_if_unavailable=True"
+    fi
+
+    helper_cmd="$(cat <<'REMOTE'
+set -euo pipefail
+cd '__HELPER_STAGE__'
+dnf -y download --resolve --alldeps --destdir ./rpms \
+  --disablerepo='mysql-*' \
+  --setopt=*.skip_if_unavailable=True \
+  php php-cli php-common php-fpm php-json php-mbstring php-mysqlnd php-pdo php-xml nginx
+tar -czf pma-offline-bundle-rhel__RHEL_MAJOR__.tar.gz -C '__HELPER_STAGE__' .
+REMOTE
+)"
+
+    helper_cmd="${helper_cmd//__HELPER_STAGE__/$helper_stage}"
+    helper_cmd="${helper_cmd//__RHEL_MAJOR__/$REMOTE_RHEL_MAJOR}"
+
+    helper_ssh_run "$helper_cmd"
+
+    helper_ssh_run "cat '$helper_stage/pma-offline-bundle-rhel${REMOTE_RHEL_MAJOR}.tar.gz'" > "$bundle_abs/pma-offline-bundle-rhel${REMOTE_RHEL_MAJOR}.tar.gz"
+    tar -xzf "$bundle_abs/pma-offline-bundle-rhel${REMOTE_RHEL_MAJOR}.tar.gz" -C "$bundle_abs"
+    rm -f "$bundle_abs/pma-offline-bundle-rhel${REMOTE_RHEL_MAJOR}.tar.gz"
+    helper_ssh_run "rm -rf '$helper_stage'" || true
+  }
+
+  download_with_wsl() {
+    info "Using WSL distro ${WSL_DISTRO} to build RPM bundle"
+
+    command -v wsl.exe >/dev/null 2>&1 || fatal "wsl.exe is not available. Use DOWNLOAD_METHOD=host/helper/docker."
+
+    local wsl_stage="/tmp/pma-offline-$RANDOM"
+    local wsl_cmd
+
+    if ! wsl.exe -d "$WSL_DISTRO" -- bash -lc "echo ok" >/dev/null 2>&1; then
+      fatal "Cannot run WSL distro '${WSL_DISTRO}'. Install/import a RHEL-compatible distro with dnf, or set WSL_DISTRO to an existing one."
+    fi
+
+    wsl_cmd="$(cat <<'REMOTE'
+set -euo pipefail
+mkdir -p '__WSL_STAGE__/rpms'
+cd '__WSL_STAGE__'
+
+if ! dnf download --help >/dev/null 2>&1; then
+  sudo dnf -y install dnf-plugins-core --disablerepo='mysql-*' --setopt=*.skip_if_unavailable=True
+fi
+
+dnf -y download --resolve --alldeps --destdir ./rpms \
+  --disablerepo='mysql-*' \
+  --setopt=*.skip_if_unavailable=True \
+  php php-cli php-common php-fpm php-json php-mbstring php-mysqlnd php-pdo php-xml nginx
+
+tar -czf 'pma-offline-bundle-rhel__RHEL_MAJOR__.tar.gz' -C '__WSL_STAGE__' .
+REMOTE
+)"
+
+    wsl_cmd="${wsl_cmd//__WSL_STAGE__/$wsl_stage}"
+    wsl_cmd="${wsl_cmd//__RHEL_MAJOR__/$REMOTE_RHEL_MAJOR}"
+
+    if ! wsl.exe -d "$WSL_DISTRO" -- bash -lc "$wsl_cmd"; then
+      fatal "WSL RPM bundle build failed in distro ${WSL_DISTRO}."
+    fi
+
+    wsl.exe -d "$WSL_DISTRO" -- bash -lc "cat '$wsl_stage/pma-offline-bundle-rhel${REMOTE_RHEL_MAJOR}.tar.gz'" > "$bundle_abs/pma-offline-bundle-rhel${REMOTE_RHEL_MAJOR}.tar.gz"
+    tar -xzf "$bundle_abs/pma-offline-bundle-rhel${REMOTE_RHEL_MAJOR}.tar.gz" -C "$bundle_abs"
+    rm -f "$bundle_abs/pma-offline-bundle-rhel${REMOTE_RHEL_MAJOR}.tar.gz"
+    wsl.exe -d "$WSL_DISTRO" -- bash -lc "rm -rf '$wsl_stage'" || true
+  }
+
+  download_with_host_tools() {
+    info "Using host package tools (no Docker)"
+
+    if command -v dnf >/dev/null 2>&1; then
+      dnf download --help >/dev/null 2>&1 || fatal "'dnf download' is unavailable. Install dnf-plugins-core, or prebuild and use SKIP_DOWNLOAD=1."
+
+      dnf -y download --resolve --alldeps \
+        --releasever "$REMOTE_RHEL_MAJOR" \
+        --destdir "$bundle_abs/rpms" \
+        php php-cli php-common php-fpm php-json php-mbstring php-mysqlnd php-pdo php-xml
+    elif command -v yumdownloader >/dev/null 2>&1; then
+      yumdownloader --resolve --destdir "$bundle_abs/rpms" \
+        php php-cli php-common php-fpm php-json php-mbstring php-mysqlnd php-pdo php-xml
+    else
+      if command -v wsl.exe >/dev/null 2>&1; then
+        download_with_wsl
+        return
+      fi
+
+      if [[ -n "$HELPER_TARGET" ]]; then
+        download_with_helper_machine
+        return
+      fi
+
+      cat >&2 <<EOF
+No host RPM download tool found on this laptop.
+
+Offline fallback (run on an ONLINE RHEL ${REMOTE_RHEL_MAJOR} helper machine):
+  sudo mkdir -p /tmp/pma-bundle/rpms
+  cd /tmp/pma-bundle
+  sudo dnf -y install dnf-plugins-core \
+    --disablerepo='mysql-*' \
+    --setopt=*.skip_if_unavailable=True
+  sudo dnf -y download --resolve --alldeps --destdir ./rpms \
+    --disablerepo='mysql-*' \
+    --setopt=*.skip_if_unavailable=True \
+    php php-cli php-common php-fpm php-json php-mbstring php-mysqlnd php-pdo php-xml nginx
+  sudo tar -czf /tmp/pma-offline-bundle-rhel${REMOTE_RHEL_MAJOR}.tar.gz -C /tmp/pma-bundle .
+
+On this laptop:
+  1) Download phpMyAdmin tarball into ${LOCAL_BUNDLE_DIR}:
+     curl -fsSL https://files.phpmyadmin.net/phpMyAdmin/${PMA_VERSION}/phpMyAdmin-${PMA_VERSION}-all-languages.tar.gz -o ${LOCAL_BUNDLE_DIR}/phpMyAdmin-${PMA_VERSION}-all-languages.tar.gz
+  2) Copy /tmp/pma-offline-bundle-rhel${REMOTE_RHEL_MAJOR}.tar.gz from helper machine and extract into ${LOCAL_BUNDLE_DIR}
+  3) Rerun:
+     SKIP_DOWNLOAD=1 bash deploy/setup-phpmyadmin-offline.sh ${TARGET} ${LOCAL_BUNDLE_DIR}
+EOF
+      fatal "Cannot download RPMs on this laptop without dnf/yumdownloader."
+    fi
+
+  }
+
+  download_with_docker() {
+    command -v docker >/dev/null 2>&1 || fatal "Docker is not installed locally. Use DOWNLOAD_METHOD=host or SKIP_DOWNLOAD=1."
+    docker info >/dev/null 2>&1 || fatal "Docker daemon is not reachable. Use DOWNLOAD_METHOD=host or SKIP_DOWNLOAD=1."
+
+    local container_image
+    if [[ "$REMOTE_RHEL_MAJOR" == "8" ]]; then
+      container_image="rockylinux:8"
+    else
+      container_image="rockylinux:9"
+    fi
+
+    info "Using container image ${container_image} to download matching RPMs"
+
+    docker run --rm \
+      -v "${bundle_abs}:/bundle" \
+      "$container_image" \
+      bash -lc "
 set -euo pipefail
 dnf -y install dnf-plugins-core curl ca-certificates
 dnf -y makecache
 dnf -y download --resolve --alldeps --destdir /bundle/rpms \
   php php-cli php-common php-fpm php-json php-mbstring php-mysqlnd php-pdo php-xml
-curl -fsSL 'https://files.phpmyadmin.net/phpMyAdmin/${PMA_VERSION}/phpMyAdmin-${PMA_VERSION}-all-languages.tar.gz' \
-  -o '/bundle/phpMyAdmin-${PMA_VERSION}-all-languages.tar.gz'
 "
+  }
+
+  case "$DOWNLOAD_METHOD" in
+    host)
+      download_with_host_tools
+      ;;
+    wsl)
+      download_with_wsl
+      ;;
+    helper)
+      download_with_helper_machine
+      ;;
+    docker)
+      download_with_docker
+      ;;
+    auto)
+      if command -v dnf >/dev/null 2>&1 || command -v yumdownloader >/dev/null 2>&1; then
+        download_with_host_tools
+      elif command -v wsl.exe >/dev/null 2>&1; then
+        download_with_wsl
+      elif [[ -n "$HELPER_TARGET" ]]; then
+        download_with_helper_machine
+      elif command -v docker >/dev/null 2>&1; then
+        download_with_docker
+      else
+        fatal "No available download method. Install host RPM tools, set HELPER_TARGET for remote bundle build, set DOWNLOAD_METHOD=docker, or prebuild and use SKIP_DOWNLOAD=1."
+      fi
+      ;;
+    *)
+      fatal "Invalid DOWNLOAD_METHOD='$DOWNLOAD_METHOD'. Use: auto, host, wsl, helper, or docker."
+      ;;
+  esac
+
+  stage_phpmyadmin_tarball
 
   ok "Offline bundle downloaded to ${LOCAL_BUNDLE_DIR}"
 }
@@ -169,10 +499,14 @@ check_local_bundle() {
   )
   shopt -u nullglob
 
-  (( ${#rpm_files[@]} > 0 )) || fatal "No RPM files found in bundle."
-  (( ${#pma_tar[@]} > 0 )) || fatal "No phpMyAdmin tarball found in bundle."
+  if [[ "$SKIP_RPMS" != "1" ]]; then
+    (( ${#rpm_files[@]} > 0 )) || fatal "No RPM files found in bundle."
+    ok "Found ${#rpm_files[@]} RPM files"
+  else
+    warn "SKIP_RPMS=1: RPM files are optional and were not required."
+  fi
 
-  ok "Found ${#rpm_files[@]} RPM files"
+  (( ${#pma_tar[@]} > 0 )) || fatal "No phpMyAdmin tarball found in bundle."
   ok "Found phpMyAdmin tarball: $(basename "${pma_tar[0]}")"
 }
 
@@ -186,52 +520,64 @@ sync_bundle() {
 install_packages_and_files() {
   step "6/9  Installing PHP stack and phpMyAdmin on target..."
 
-  ssh_sudo "
+  local remote_cmd
+  remote_cmd="$(cat <<'REMOTE'
 set -euo pipefail
-cd '${REMOTE_STAGE_DIR}'
-
-PKG_MGR=''
-if command -v dnf >/dev/null 2>&1; then
-  PKG_MGR='dnf'
-elif command -v yum >/dev/null 2>&1; then
-  PKG_MGR='yum'
-else
-  echo 'Neither dnf nor yum exists on target.'
-  exit 1
-fi
+cd '__REMOTE_STAGE_DIR__'
 
 shopt -s nullglob
 RPM_FILES=(./*.rpm ./rpms/*.rpm)
 PMA_TAR=(./phpMyAdmin-*.tar.gz ./phpMyAdmin-*.tar.xz ./phpMyAdmin-*.tar.bz2)
 shopt -u nullglob
 
-if [[ \"$PKG_MGR\" == 'dnf' ]]; then
-  dnf -y install --disablerepo='*' \\"\\${RPM_FILES[@]}\\"
-else
-  yum -y localinstall \\"\\${RPM_FILES[@]}\\"
+if [[ "__SKIP_RPMS__" != "1" ]]; then
+  (( ${#RPM_FILES[@]} > 0 )) || { echo 'No RPM files found on target stage directory.'; exit 1; }
+
+  PKG_MGR=''
+  if command -v dnf >/dev/null 2>&1; then
+    PKG_MGR='dnf'
+  elif command -v yum >/dev/null 2>&1; then
+    PKG_MGR='yum'
+  else
+    echo 'Neither dnf nor yum exists on target.'
+    exit 1
+  fi
+
+  if [[ "$PKG_MGR" == 'dnf' ]]; then
+    dnf -y install --disablerepo='*' "${RPM_FILES[@]}"
+  else
+    yum -y localinstall "${RPM_FILES[@]}"
+  fi
 fi
+
+(( ${#PMA_TAR[@]} > 0 )) || { echo 'No phpMyAdmin tarball found on target stage directory.'; exit 1; }
 
 rm -rf /usr/share/phpMyAdmin
 mkdir -p /usr/share/phpMyAdmin
-tar -xf \"\\${PMA_TAR[0]}\" -C /tmp
+tar -xf "${PMA_TAR[0]}" -C /tmp
 
 EXTRACTED_DIR=''
 for d in /tmp/phpMyAdmin-*; do
-  if [[ -d \"$d\" ]]; then
-    EXTRACTED_DIR=\"$d\"
+  if [[ -d "$d" ]]; then
+    EXTRACTED_DIR="$d"
     break
   fi
 done
 
-if [[ -z \"$EXTRACTED_DIR\" ]]; then
+if [[ -z "$EXTRACTED_DIR" ]]; then
   echo 'Failed to locate extracted phpMyAdmin directory in /tmp.'
   exit 1
 fi
 
-cp -a \"$EXTRACTED_DIR\"/. /usr/share/phpMyAdmin/
+cp -a "$EXTRACTED_DIR"/. /usr/share/phpMyAdmin/
 
 if ! command -v php-fpm >/dev/null 2>&1; then
-  echo 'php-fpm is missing after install.'
+  echo 'php-fpm is missing. Install php-fpm on target, or rerun without SKIP_RPMS.'
+  exit 1
+fi
+
+if ! php -m 2>/dev/null | grep -qiE '^mysqli$|^pdo_mysql$'; then
+  echo 'PHP MySQL extension is missing (mysqli/pdo_mysql). Install php-mysqlnd on target, or rerun without SKIP_RPMS.'
   exit 1
 fi
 
@@ -239,8 +585,13 @@ if ! command -v nginx >/dev/null 2>&1; then
   echo 'nginx is missing on target.'
   exit 1
 fi
-"
+REMOTE
+)"
 
+  remote_cmd="${remote_cmd//__REMOTE_STAGE_DIR__/$REMOTE_STAGE_DIR}"
+  remote_cmd="${remote_cmd//__SKIP_RPMS__/$SKIP_RPMS}"
+
+  ssh_sudo "$remote_cmd"
   ok "Packages and phpMyAdmin files installed"
 }
 
@@ -367,6 +718,17 @@ info "Target     : $TARGET"
 info "Bundle dir : $LOCAL_BUNDLE_DIR"
 info "URL path   : ${PMA_PATH}/"
 info "PMA ver    : ${PMA_VERSION}"
+info "Download   : ${DOWNLOAD_METHOD}"
+info "Skip RPMs  : ${SKIP_RPMS}"
+if [[ -n "$PMA_ARCHIVE" ]]; then
+  info "PMA file   : ${PMA_ARCHIVE}"
+fi
+if [[ "$DOWNLOAD_METHOD" == "wsl" || "$DOWNLOAD_METHOD" == "auto" ]]; then
+  info "WSL distro : ${WSL_DISTRO}"
+fi
+if [[ -n "$HELPER_TARGET" ]]; then
+  info "Helper     : ${HELPER_TARGET}"
+fi
 
 step "Preflight  Checking SSH connectivity..."
 if ssh -o BatchMode=yes "${SSH_OPTS[@]}" "$TARGET" "echo ok" >/dev/null 2>&1; then
@@ -380,6 +742,7 @@ ok "SSH connection successful"
 
 validate_sudo_access
 detect_remote_platform
+preflight_target_runtime_for_skip_rpms
 prepare_bundle_on_laptop
 check_local_bundle
 sync_bundle

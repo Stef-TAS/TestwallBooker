@@ -36,36 +36,85 @@ function mapAccount(row: any) {
   }
 }
 
+function buildUsernameLookupKeys(value: string): string[] {
+  const normalized = value.trim().toLowerCase()
+  if (!normalized) {
+    return []
+  }
+
+  const keys = new Set<string>([normalized])
+  const slashParts = normalized.split(/\\|\//).filter(Boolean)
+  if (slashParts.length > 1) {
+    keys.add(slashParts[slashParts.length - 1])
+  }
+
+  const atIndex = normalized.indexOf('@')
+  if (atIndex > 0) {
+    keys.add(normalized.slice(0, atIndex))
+  }
+
+  return Array.from(keys)
+}
+
 // Get profile pictures for a set of account ids.
 router.get('/profile-pictures', async (req: Request, res: Response) => {
   const idsParam = String(req.query.ids ?? '').trim()
-  if (!idsParam) {
-    res.json({})
-    return
-  }
+  const usernamesParam = String(req.query.usernames ?? '').trim()
 
   const ids = idsParam
     .split(',')
     .map((value) => Number(value.trim()))
     .filter((value) => Number.isInteger(value) && value > 0)
 
-  if (ids.length === 0) {
-    res.json({})
+  const usernames = usernamesParam
+    .split(',')
+    .map((value) => value.trim())
+    .filter((value) => value.length > 0)
+
+  if (ids.length === 0 && usernames.length === 0) {
+    res.json({ byId: {}, byUsername: {} })
     return
   }
 
-  const placeholders = ids.map(() => '?').join(',')
-  const [rows] = await pool.execute(
-    `SELECT id, profile_picture FROM accounts WHERE id IN (${placeholders})`,
-    ids,
-  )
+  const byId: Record<number, string | null> = {}
+  const byUsername: Record<string, string | null> = {}
 
-  const result: Record<number, string | null> = {}
-  for (const row of rows as any[]) {
-    result[row.id] = normalizeProfilePicture(row.profile_picture)
+  if (ids.length > 0) {
+    const placeholders = ids.map(() => '?').join(',')
+    const [rows] = await pool.execute(
+      `SELECT id, profile_picture FROM accounts WHERE id IN (${placeholders})`,
+      ids,
+    )
+
+    for (const row of rows as any[]) {
+      byId[row.id] = normalizeProfilePicture(row.profile_picture)
+    }
   }
 
-  res.json(result)
+  const usernameLookupKeys = Array.from(
+    new Set(usernames.flatMap((username) => buildUsernameLookupKeys(username))),
+  )
+
+  if (usernameLookupKeys.length > 0) {
+    const placeholders = usernameLookupKeys.map(() => '?').join(',')
+    const [rows] = await pool.execute(
+      `SELECT username, profile_picture FROM accounts WHERE LOWER(username) IN (${placeholders})`,
+      usernameLookupKeys,
+    )
+
+    for (const row of rows as any[]) {
+      const username = String(row.username ?? '')
+        .trim()
+        .toLowerCase()
+      if (!username) {
+        continue
+      }
+
+      byUsername[username] = normalizeProfilePicture(row.profile_picture)
+    }
+  }
+
+  res.json({ byId, byUsername })
 })
 
 // Get all accounts (admin only)
