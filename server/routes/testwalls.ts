@@ -178,6 +178,93 @@ router.get('/', async (_req: Request, res: Response) => {
   res.json(rows)
 })
 
+// Get all waldies for a specific testwall
+router.get('/:id/waldies', async (req: Request, res: Response) => {
+  const { id } = req.params
+
+  const [rows] = await pool.execute(
+    `SELECT
+      w.wldie_id AS id,
+      w.wldie_name AS name,
+      dp.dutp_number AS serial_number,
+      CASE
+        WHEN wi.bck_wldie_id IS NOT NULL THEN 'inactive'
+        ELSE 'active'
+      END AS status,
+      e.ewld_name AS ewald_name,
+      d.dut_name AS testbed_name
+    FROM ewald_waldies w
+    INNER JOIN ewalds e ON e.ewld_id = w.ewld_id
+    LEFT JOIN dut_pins dp ON dp.dutp_id = w.dutp_id
+    LEFT JOIN duts d ON d.dut_id = dp.dut_id
+    LEFT JOIN ewald_waldies_inactive wi
+      ON wi.bck_ewld_id = w.ewld_id
+      AND wi.bck_dutp_id = w.dutp_id
+      AND wi.bck_wldie_gpio_id = w.wldie_gpio_id
+    WHERE e.l_id = ?
+    ORDER BY e.ewld_name, w.wldie_name`,
+    [id],
+  )
+
+  res.json(rows)
+})
+
+// Get full waldie details for a specific testwall
+router.get('/:id/waldies/:waldieId', async (req: Request, res: Response) => {
+  const { id, waldieId } = req.params
+
+  const [rows] = await pool.execute(
+    `SELECT
+      t.id AS testwall_id,
+      t.name AS testwall_name,
+      t.external_id AS testwall_external_id,
+      t.ip_address AS testwall_ip_address,
+      t.jenkins_name AS testwall_jenkins_name,
+      t.port AS testwall_port,
+      e.ewld_id,
+      e.ewld_name,
+      e.ewld_channel,
+      w.wldie_id,
+      w.wldie_name,
+      w.dutp_id,
+      w.wldie_gpio_id,
+      w.wldie_load,
+      w.wldie_max_short_time,
+      dp.dutp_name,
+      dp.dutp_number,
+      d.dut_id,
+      d.dut_name,
+      d.dut_report_name,
+      d.dut_obj_name,
+      d.dut_default_baudrate,
+      d.dut_mac_addr,
+      d.dut_max_vol,
+      CASE
+        WHEN wi.bck_wldie_id IS NOT NULL THEN 'inactive'
+        ELSE 'active'
+      END AS status
+    FROM ewald_waldies w
+    INNER JOIN ewalds e ON e.ewld_id = w.ewld_id
+    INNER JOIN testwalls t ON t.id = e.l_id
+    LEFT JOIN dut_pins dp ON dp.dutp_id = w.dutp_id
+    LEFT JOIN duts d ON d.dut_id = dp.dut_id
+    LEFT JOIN ewald_waldies_inactive wi
+      ON wi.bck_ewld_id = w.ewld_id
+      AND wi.bck_dutp_id = w.dutp_id
+      AND wi.bck_wldie_gpio_id = w.wldie_gpio_id
+    WHERE e.l_id = ? AND w.wldie_id = ?
+    LIMIT 1`,
+    [id, waldieId],
+  )
+
+  if ((rows as any[]).length === 0) {
+    res.status(404).json({ error: 'Waldie not found for this testwall' })
+    return
+  }
+
+  res.json((rows as any[])[0])
+})
+
 // Get testwall by ID
 router.get('/:id', async (req: Request, res: Response) => {
   const { id } = req.params
