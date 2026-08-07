@@ -344,10 +344,15 @@ onMounted(() => {
         <div class="absolute -bottom-28 -left-16 h-56 w-56 rounded-full bg-cyan-500/15 blur-2xl" />
 
         <div class="relative z-10">
+          <div class="flex flex-wrap items-center gap-2 mb-3">
+            <Tag severity="info" value="Waldies Grid" />
+            <Tag severity="success" value="Copy Ready" />
+          </div>
           <h1 class="text-3xl font-semibold tracking-tight">Waldies view</h1>
           <p class="mt-3 text-sm leading-6 opacity-80 max-w-3xl">
-            This is placeholder text for the Waldies banner. Replace this sentence with your final
-            description when the feature content is ready.
+            Select a testwall to browse its mapped waldies, inspect status and serial information,
+            and open segmented detail cards with quick copy actions for each section or the full
+            dataset.
           </p>
         </div>
       </template>
