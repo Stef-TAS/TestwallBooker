@@ -80,12 +80,19 @@ NODE_ENV=development
 CORS_ORIGIN=http://localhost:5173
 PYTHON_CMD=python3
 PYTHON_STATUS_URL=http://127.0.0.1:8080/api/machines
+SMTP_HOST=smtp.your-company.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=
+SMTP_PASS=
+EMAIL_FROM=no-reply@testwallbooker.local
 ```
 
 Notes:
 
 1. The backend auto-creates required tables on startup.
 2. The database itself must exist beforehand.
+3. Booking confirmation emails are sent only when SMTP_HOST and EMAIL_FROM are configured.
 
 ### 3) Create local database
 

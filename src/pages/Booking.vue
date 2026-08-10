@@ -32,6 +32,7 @@ import { writeToClipboard } from '@/utils/clipboard'
 
 const accountStore = useAccountStore()
 const settingsStore = useSettingsStore()
+const MAX_BOOKING_DURATION_MS = 24 * 60 * 60 * 1000
 
 const testwallsStore = useTestwallsStore()
 const { testwallsWithAvailability, bookings: testwallBookings } = storeToRefs(testwallsStore)
@@ -137,7 +138,7 @@ type BookingHistoryUserOption = {
   value: number
 }
 
-const { getBookingsByUser, terminateBooking, createBooking } = useBookings()
+const { getBookingsByUser, terminateBooking, createBooking, error: bookingApiError } = useBookings()
 const toast = useToast()
 const { getAllAccounts } = useAccounts()
 const bookings = ref<BookingHistory[]>([])
@@ -321,8 +322,41 @@ const selectedTestwall = computed(
 const bookingstart = ref(new Date(Date.now()))
 const bookingend = ref(new Date(Date.now()))
 
+const bookingRangeDurationMs = computed(
+  () => bookingend.value.getTime() - bookingstart.value.getTime(),
+)
+const hasInvalidTimeRange = computed(() => bookingRangeDurationMs.value <= 0)
+const exceedsMaxBookingDuration = computed(
+  () => bookingRangeDurationMs.value > MAX_BOOKING_DURATION_MS,
+)
+const hasBookingValidationError = computed(
+  () => hasBookingConflict.value || hasInvalidTimeRange.value || exceedsMaxBookingDuration.value,
+)
+
 async function handleFinishBooking() {
   if (!selectedRadioButton.value || !accountStore.account?.id) return
+
+  if (hasInvalidTimeRange.value) {
+    toast.add({
+      severity: 'warn',
+      summary: 'Invalid Timeframe',
+      detail: 'End date and time must be later than start date and time.',
+      life: 5000,
+    })
+    return
+  }
+
+  if (exceedsMaxBookingDuration.value) {
+    toast.add({
+      severity: 'warn',
+      summary: 'Maximum Booking Length Reached',
+      detail:
+        'A booking can be at most 24 hours. Split longer reservations into separate bookings.',
+      life: 6000,
+    })
+    return
+  }
+
   isSubmittingBooking.value = true
   try {
     const result = await createBooking(
@@ -344,7 +378,7 @@ async function handleFinishBooking() {
       toast.add({
         severity: 'error',
         summary: 'Booking Failed',
-        detail: 'Could not create the booking. Please try again.',
+        detail: bookingApiError.value || 'Could not create the booking. Please try again.',
         life: 5000,
       })
     }
@@ -621,12 +655,25 @@ async function handleFinishBooking() {
                         </li>
                       </ul>
                     </div>
+                    <div
+                      v-if="hasInvalidTimeRange"
+                      class="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-300"
+                    >
+                      End date and time must be later than the start date and time.
+                    </div>
+                    <div
+                      v-if="exceedsMaxBookingDuration"
+                      class="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-400"
+                    >
+                      A single booking can be at most 24 hours. For multi-day usage, create one
+                      booking per day.
+                    </div>
                     <div class="flex pt-5 justify-between">
                       <Button severity="secondary" @click="activateCallback('2')">
                         <ArrowLeft />
                         Back
                       </Button>
-                      <Button @click="activateCallback('4')" :disabled="hasBookingConflict">
+                      <Button @click="activateCallback('4')" :disabled="hasBookingValidationError">
                         Next
                         <ArrowRight />
                       </Button>
@@ -699,7 +746,7 @@ async function handleFinishBooking() {
                       <Button
                         @click="handleFinishBooking"
                         :loading="isSubmittingBooking"
-                        :disabled="isSubmittingBooking"
+                        :disabled="isSubmittingBooking || hasBookingValidationError"
                       >
                         Finish Booking
                         <ArrowRight />

@@ -1,13 +1,34 @@
 import { Router } from 'express'
 import { pool } from '../db'
+import { isBookingEmailEnabled, sendBookingCreatedEmail } from '../email'
 import type { Request, Response } from 'express'
 
 const router = Router()
+const MAX_BOOKING_DURATION_MS = 24 * 60 * 60 * 1000
 
 function toMysqlDatetime(value: string): string {
   const d = new Date(value)
   if (isNaN(d.getTime())) return value
   return d.toISOString().slice(0, 19).replace('T', ' ')
+}
+
+function validateBookingWindow(fromValue: string, toValue: string): string | null {
+  const fromDate = new Date(fromValue)
+  const toDate = new Date(toValue)
+
+  if (Number.isNaN(fromDate.getTime()) || Number.isNaN(toDate.getTime())) {
+    return 'Invalid from_time or to_time format'
+  }
+
+  if (toDate.getTime() <= fromDate.getTime()) {
+    return 'to_time must be later than from_time'
+  }
+
+  if (toDate.getTime() - fromDate.getTime() > MAX_BOOKING_DURATION_MS) {
+    return 'Booking duration cannot exceed 24 hours'
+  }
+
+  return null
 }
 
 export async function reconcileRecentBookings() {
@@ -101,6 +122,12 @@ router.post('/', async (req: Request, res: Response) => {
     return
   }
 
+  const bookingWindowError = validateBookingWindow(String(from_time), String(to_time))
+  if (bookingWindowError) {
+    res.status(400).json({ error: bookingWindowError })
+    return
+  }
+
   const normalizedStatus = typeof status === 'string' && status.trim() ? status.trim() : 'active'
   const fromMysql = toMysqlDatetime(from_time as string)
   const toMysql = toMysqlDatetime(to_time as string)
@@ -124,7 +151,40 @@ router.post('/', async (req: Request, res: Response) => {
     [testwall_id, user_id, fromMysql, toMysql, normalizedStatus],
   )
   const [result] = await pool.execute('SELECT LAST_INSERT_ID() as id')
-  res.status(201).json({ ...(result as any[])[0], status: normalizedStatus })
+  const bookingId = Number((result as any[])[0]?.id)
+
+  if (bookingId > 0 && isBookingEmailEnabled()) {
+    const [bookingContextRows] = await pool.execute(
+      `SELECT a.email AS user_email, a.username, t.name AS testwall_name
+       FROM accounts a
+       LEFT JOIN testwalls t ON t.id = ?
+       WHERE a.id = ?
+       LIMIT 1`,
+      [testwall_id, user_id],
+    )
+
+    const bookingContext = (bookingContextRows as any[])[0]
+    const userEmail = String(bookingContext?.user_email ?? '').trim()
+
+    if (userEmail) {
+      try {
+        await sendBookingCreatedEmail({
+          to: userEmail,
+          username: bookingContext?.username ? String(bookingContext.username) : null,
+          testwallName: bookingContext?.testwall_name
+            ? String(bookingContext.testwall_name)
+            : `Testwall ${testwall_id}`,
+          fromTime: fromMysql,
+          toTime: toMysql,
+          bookingId,
+        })
+      } catch (error) {
+        console.error('Failed to send booking confirmation email:', error)
+      }
+    }
+  }
+
+  res.status(201).json({ id: bookingId, status: normalizedStatus })
 })
 
 // Update booking
@@ -153,6 +213,29 @@ router.put('/:id', async (req: Request, res: Response) => {
   if (updates.length === 0) {
     res.status(400).json({ error: 'No booking fields provided for update' })
     return
+  }
+
+  if (from_time !== undefined || to_time !== undefined) {
+    const [existingRows] = await pool.execute(
+      'SELECT from_time, to_time FROM bookings WHERE id = ? LIMIT 1',
+      [id],
+    )
+
+    if ((existingRows as any[]).length === 0) {
+      res.status(404).json({ error: 'Booking not found' })
+      return
+    }
+
+    const existingBooking = (existingRows as any[])[0]
+    const nextFrom =
+      from_time !== undefined ? String(from_time) : String(existingBooking.from_time ?? '')
+    const nextTo = to_time !== undefined ? String(to_time) : String(existingBooking.to_time ?? '')
+
+    const bookingWindowError = validateBookingWindow(nextFrom, nextTo)
+    if (bookingWindowError) {
+      res.status(400).json({ error: bookingWindowError })
+      return
+    }
   }
 
   values.push(id as string)
