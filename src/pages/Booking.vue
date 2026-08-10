@@ -327,9 +327,6 @@ const isSubmittingBooking = ref(false)
 const selectedTestwall = computed(
   () => testwallsForSelection.value.find((t) => t.id === selectedRadioButton.value) ?? null,
 )
-const isSelectedTestwallOutOfService = computed(
-  () => selectedTestwall.value?.availabilityStatus === 'out_of_service',
-)
 
 const bookingstart = ref(new Date(Date.now()))
 const bookingend = ref(new Date(Date.now()))
@@ -502,19 +499,13 @@ async function handleFinishBooking() {
                         <template #item="{ item }">
                           <label
                             :for="`testwall-${item.id}`"
-                            class="flex items-center gap-3.5 py-1 px-2.5 w-full"
-                            :class="
-                              item.availabilityStatus === 'out_of_service'
-                                ? 'cursor-not-allowed opacity-60'
-                                : 'cursor-pointer'
-                            "
+                            class="flex items-center gap-3.5 py-1 px-2.5 w-full cursor-pointer"
                           >
                             <RadioButton
                               v-model="selectedRadioButton"
                               :input-id="`testwall-${item.id}`"
                               name="testwall"
                               :value="item.id"
-                              :disabled="item.availabilityStatus === 'out_of_service'"
                             />
                             <span class="text-sm">{{ item.name }}</span>
                             <Tag
@@ -559,9 +550,7 @@ async function handleFinishBooking() {
                       </Button>
                       <Button
                         @click="activateCallback('3')"
-                        :disabled="
-                          selectedRadioButton == undefined || isSelectedTestwallOutOfService
-                        "
+                        :disabled="selectedRadioButton == undefined"
                       >
                         Next
                         <ArrowRight />
