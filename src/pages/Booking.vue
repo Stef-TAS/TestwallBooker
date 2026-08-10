@@ -35,8 +35,16 @@ const settingsStore = useSettingsStore()
 const MAX_BOOKING_DURATION_MS = 24 * 60 * 60 * 1000
 
 const testwallsStore = useTestwallsStore()
-const { testwallsWithAvailability, bookings: testwallBookings } = storeToRefs(testwallsStore)
-const { loadTestwalls } = testwallsStore
+const {
+  testwallsWithAvailability,
+  overviewRows,
+  bookings: testwallBookings,
+} = storeToRefs(testwallsStore)
+const { loadTestwalls, loadOverview } = testwallsStore
+
+const testwallsForSelection = computed(() =>
+  overviewRows.value.length > 0 ? overviewRows.value : testwallsWithAvailability.value,
+)
 
 const selectedTestwallBookings = computed(() => {
   if (!selectedRadioButton.value) return []
@@ -286,6 +294,7 @@ async function handleTerminateBooking(bookingId: number) {
 
 onMounted(() => {
   void loadTestwalls()
+  void loadOverview()
   void loadUserOptions().then(loadBookings)
 })
 
@@ -316,7 +325,10 @@ const selectedRadioButton = ref<number | undefined>()
 const isSubmittingBooking = ref(false)
 
 const selectedTestwall = computed(
-  () => testwallsWithAvailability.value.find((t) => t.id === selectedRadioButton.value) ?? null,
+  () => testwallsForSelection.value.find((t) => t.id === selectedRadioButton.value) ?? null,
+)
+const isSelectedTestwallOutOfService = computed(
+  () => selectedTestwall.value?.availabilityStatus === 'out_of_service',
 )
 
 const bookingstart = ref(new Date(Date.now()))
@@ -484,27 +496,33 @@ async function handleFinishBooking() {
                   <template #content>
                     <div>
                       <CommandMenu
-                        :model="testwallsWithAvailability"
+                        :model="testwallsForSelection"
                         placeholder="Search for Testwalls..."
                       >
                         <template #item="{ item }">
                           <label
                             :for="`testwall-${item.id}`"
-                            class="flex items-center gap-3.5 py-1 px-2.5 w-full cursor-pointer"
+                            class="flex items-center gap-3.5 py-1 px-2.5 w-full"
+                            :class="
+                              item.availabilityStatus === 'out_of_service'
+                                ? 'cursor-not-allowed opacity-60'
+                                : 'cursor-pointer'
+                            "
                           >
                             <RadioButton
                               v-model="selectedRadioButton"
                               :input-id="`testwall-${item.id}`"
                               name="testwall"
                               :value="item.id"
+                              :disabled="item.availabilityStatus === 'out_of_service'"
                             />
                             <span class="text-sm">{{ item.name }}</span>
-                            <Tag v-if="item.isAvailable == true" severity="success"
-                              >Available Now</Tag
+                            <Tag
+                              v-if="item.availabilityStatus === 'out_of_service'"
+                              severity="danger"
+                              >Out of Service</Tag
                             >
-                            <Tag v-if="item.isAvailable == false" severity="danger"
-                              >Unavailable Now</Tag
-                            >
+                            <Tag v-else severity="success">Available</Tag>
                           </label>
                         </template>
                         <template #footer>
@@ -541,7 +559,9 @@ async function handleFinishBooking() {
                       </Button>
                       <Button
                         @click="activateCallback('3')"
-                        :disabled="selectedRadioButton == undefined"
+                        :disabled="
+                          selectedRadioButton == undefined || isSelectedTestwallOutOfService
+                        "
                       >
                         Next
                         <ArrowRight />
