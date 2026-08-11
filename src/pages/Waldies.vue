@@ -348,17 +348,17 @@ onMounted(() => {
             <Tag severity="info" value="Waldies Grid" />
             <Tag severity="success" value="Copy Ready" />
           </div>
-          <h1 class="text-3xl font-semibold tracking-tight">Waldies view</h1>
+          <h1 class="text-3xl font-semibold tracking-tight">Waldies View</h1>
           <p class="mt-3 text-sm leading-6 opacity-80 max-w-3xl">
             Select a testwall to browse its mapped waldies, inspect status and serial information,
             and open segmented detail cards with quick copy actions for each section or the full
-            dataset.
+            data set.
           </p>
         </div>
       </template>
     </Card>
     <div v-if="accountStore.showAdminContent" class="mb-4">
-      <p>Admin Terminal Select</p>
+      <p>Admin Testwall Selector</p>
       <Select
         v-model="selectedTestwall"
         :options="testwallsWithAvailability"
@@ -391,7 +391,7 @@ onMounted(() => {
       No waldies found for this testwall.
     </div>
 
-    <div v-else class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+    <div v-else class="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
       <Card
         v-for="waldie in waldies"
         :key="waldie.id"

@@ -12,7 +12,7 @@ const adminAccess = [
   {
     title: 'Admin Controls Toggle',
     details:
-      'Admins can enable Admin-Content from the Account page. This unlocks administrator-only controls in the UI.',
+      'Admins can enable Admin Content from the Account page to unlock administrator-only controls in the UI.',
     severity: 'danger',
     label: 'Privilege',
   },
@@ -47,7 +47,7 @@ const adminCanDo = [
   'Terminate active bookings from the Booking History actions column',
   'Review booking status outcomes (active, finished, crashed, forcequit)',
   'Monitor occupancy using current booking owner, live machine users, and avatar context in Overview',
-  'Use pseudo terminal workflows and command catalog tools',
+  'Use Waldies to inspect mapped hardware details and copy technical reference data',
 ]
 
 const adminWorkflows = [
@@ -75,8 +75,7 @@ const adminWorkflows = [
 
 const limitsAndResponsibilities = [
   'Passwords are stored as bcrypt hashes; keep credentials strong and avoid sharing bootstrap admin accounts.',
-  'The terminal is pseudo-terminal style and not a direct remote shell into physical hardware.',
-  'Role-based visibility is implemented in the UI; production-grade backend authorization should remain a priority.',
+  'Role-based visibility is implemented in the UI; keep backend authorization checks aligned with those UI constraints.',
   'Use admin privileges carefully: changes to users and scheduling can impact many teams at once.',
   'When a wall appears unavailable, verify booking status, active user, and live machine user context before intervention.',
 ]
@@ -100,8 +99,8 @@ const limitsAndResponsibilities = [
 
           <h1 class="text-3xl font-semibold tracking-tight">Administrator Guide</h1>
           <p class="mt-3 text-sm leading-6 opacity-80 max-w-3xl">
-            This page explains exactly what admin access means in Wall Test Facility, what tools are
-            available, and how to use them safely for day-to-day operations.
+            This page explains what admin access means in Wall Test Facility, what tools are
+            available, and how to use them safely in day-to-day operations.
           </p>
         </div>
       </template>
@@ -192,9 +191,9 @@ const limitsAndResponsibilities = [
             traceable decisions.
           </p>
           <p class="text-sm leading-6 opacity-80">
-            The current system now includes practical admin workflows for account lifecycle,
+            The current system includes practical admin workflows for account lifecycle,
             permissions, booking intervention, and live occupancy tracking. Keep those actions
-            consistent and well-communicated so teams can trust platform decisions.
+            consistent and well communicated so teams can trust platform decisions.
           </p>
         </template>
       </Card>

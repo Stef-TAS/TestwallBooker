@@ -7,7 +7,7 @@ const settingsStore = useSettingsStore()
 const quickFacts = [
   {
     label: 'Main Goal',
-    value: 'Coordinate shared testwall access',
+    value: 'Coordinate shared testwall access across teams',
     accent: 'bg-cyan-500/10 border-cyan-500/30',
   },
   {
@@ -17,7 +17,7 @@ const quickFacts = [
   },
   {
     label: 'Operational Focus',
-    value: 'Availability, bookings, account controls, and traceability',
+    value: 'Availability, bookings, access control, and traceability',
     accent: 'bg-emerald-500/10 border-emerald-500/30',
   },
 ]
@@ -33,7 +33,7 @@ const userJourney = [
     step: '02',
     title: 'Overview and Live Status',
     description:
-      'Overview now supports manual refresh and optional auto-refresh, showing current booking owner plus live machine user snapshots when available.',
+      'Overview supports manual refresh and optional auto-refresh, showing the current booking owner plus live machine user snapshots when available.',
   },
   {
     step: '03',
@@ -43,15 +43,15 @@ const userJourney = [
   },
   {
     step: '04',
-    title: 'Pseudo Terminal and Command Catalog',
+    title: 'Waldies Hardware Mapping',
     description:
-      'A searchable command list supports consistent command usage and faster operations for testwall tasks.',
+      'The Waldies page exposes mapped hardware details and copy-ready reference sections for troubleshooting and coordination.',
   },
   {
     step: '05',
     title: 'Account and Admin Controls',
     description:
-      'Users can update profile pictures and local display preferences; admins can additionally manage users and permission levels from Account.',
+      'Users can update profile pictures and local display preferences, while admins can additionally manage users and permission levels from Account.',
   },
 ]
 
@@ -69,7 +69,7 @@ const operationalValue = [
   'Prevents scheduling collisions through overlap checks',
   'Makes occupancy and ownership visible across teams',
   'Lets admins intervene quickly by terminating active bookings',
-  'Standardizes command workflows with predefined commands',
+  'Surfaces structured hardware context through Waldies details',
   'Supports personalization through themes, compact view, and time-format preferences',
   'Improves traceability with logs and command history',
   'Reduces idle time and coordination overhead',
@@ -77,9 +77,8 @@ const operationalValue = [
 
 const implementationNotes = [
   'Passwords are stored with bcrypt hashing and legacy plaintext records are upgraded on successful login.',
-  'Overview availability currently comes from active booking windows plus optional live-machine user snapshots from the Python status endpoint.',
-  'Terminal behavior is currently pseudo-terminal style, not a direct hardware shell.',
-  'The Query page route exists but is currently minimal and not surfaced in the main sidebar actions.',
+  'Overview availability is derived from active booking windows plus optional live-machine user snapshots from the Python status endpoint.',
+  'The Query page exists as a lightweight placeholder and is currently not surfaced in the main sidebar actions.',
 ]
 </script>
 <template>
@@ -96,11 +95,11 @@ const implementationNotes = [
             <Tag severity="success" value="Role-Aware Access" />
           </div>
 
-          <h1 class="text-3xl font-semibold tracking-tight">What is the Wall Test Facility?</h1>
+          <h1 class="text-3xl font-semibold tracking-tight">What Is Wall Test Facility?</h1>
           <p class="mt-3 text-sm leading-6 opacity-80 max-w-3xl">
-            A centralized internal platform for viewing, booking, and coordinating access to shared
-            physical testwalls. It gives teams a reliable source of truth for wall availability,
-            ownership, and operational history.
+            Wall Test Facility is a centralized internal platform for viewing, booking, and
+            coordinating access to shared physical testwalls. It gives teams one reliable source of
+            truth for wall availability, ownership, and operational history.
           </p>
         </div>
       </template>
@@ -122,12 +121,12 @@ const implementationNotes = [
           <Divider class="my-3" />
           <p class="text-sm leading-6 mb-3">
             The Wall Test Facility reduces conflict around shared hardware by replacing ad-hoc
-            coordination with transparent scheduling, visible occupancy, and history-backed
-            accountability.
+            coordination with transparent scheduling, visible occupancy, and traceable,
+            history-backed accountability.
           </p>
           <p class="text-sm leading-6">
             In practice, it combines an availability dashboard, booking management, account and role
-            handling, and a command-oriented pseudo terminal in one web application.
+            handling, and hardware mapping visibility in a single web application.
           </p>
         </template>
       </Card>
@@ -153,7 +152,7 @@ const implementationNotes = [
               value="Book + Operate"
               v-tooltip.left="{
                 value:
-                  '<div class=\'font-semibold text-sm\'>Testwall Operator</div><div class=\'opacity-75 text-sm mt-1\'>Can book testwalls, access the pseudo terminal while a booking is active, and run commands against testwall resources.</div>',
+                  '<div class=\'font-semibold text-sm\'>Testwall Operator</div><div class=\'opacity-75 text-sm mt-1\'>Can book testwalls, inspect availability and occupancy details, and use Waldies for mapped hardware context.</div>',
                 escape: false,
               }"
             />
@@ -165,15 +164,14 @@ const implementationNotes = [
               value="Observer"
               v-tooltip.left="{
                 value:
-                  '<div class=\'font-semibold text-sm\'>Observer</div><div class=\'opacity-75 text-sm mt-1\'>Read-only access. Can view the Overview and testwall availability, but cannot create bookings or access the terminal. Contact an Admin to request elevated permissions.</div>',
+                  '<div class=\'font-semibold text-sm\'>Observer</div><div class=\'opacity-75 text-sm mt-1\'>Read-only access. Can view Overview and testwall availability, but cannot create bookings. Contact an Admin to request elevated permissions.</div>',
                 escape: false,
               }"
             />
           </div>
           <Divider class="my-2" />
           <p class="leading-6 opacity-80">
-            UI actions are conditionally enabled from these roles, including booking and terminal
-            access.
+            UI actions are enabled by role, including booking permissions and admin-only controls.
           </p>
         </div>
       </Fieldset>
@@ -239,8 +237,8 @@ const implementationNotes = [
         <h2 class="text-xl font-semibold">Current Implementation Notes</h2>
         <Divider class="my-3" />
         <p class="text-sm leading-6 mb-3 opacity-90">
-          The platform already communicates the core intent well, while a few implementation areas
-          are still maturing.
+          The platform already covers core scheduling and visibility needs, while a few
+          implementation areas are still maturing.
         </p>
         <div class="space-y-2">
           <div

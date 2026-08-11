@@ -16,14 +16,14 @@ const tutorialSteps = [
     step: '02',
     title: 'Open Booking',
     description:
-      'Go to Booking and start the guided flow. If Booking is disabled for your account, you currently do not have testwall access. Contact your admin to request the required permissions.',
+      'Go to Booking and start the guided flow. If Booking is disabled for your account, you do not currently have testwall access. Contact your admin to request the required permissions.',
     tags: ['Access-Controlled', 'Contact Admin if Disabled'],
   },
   {
     step: '03',
     title: 'Complete the Booking Flow',
     description:
-      'Review account details, choose start and end time, select an available wall, and confirm your reservation. Watch conflict warnings and existing-day bookings in the date picker before you proceed.',
+      'Review account details, choose start and end time, select an available wall, and confirm your reservation. Check conflict warnings and same-day bookings in the date picker before you proceed.',
     tags: ['Stepper Flow', 'Reserve Time Slot'],
   },
   {
@@ -35,10 +35,10 @@ const tutorialSteps = [
   },
   {
     step: '05',
-    title: 'Use Pseudo Terminal and Command Search',
+    title: 'Use Waldies for Hardware Mapping',
     description:
-      'Open Pseudo Terminal for command workflows. Press Ctrl/Cmd + L to open the command palette, search predefined commands by category, and copy them quickly into the terminal.',
-    tags: ['Runtime Actions', 'Ctrl/Cmd + L'],
+      'Open Waldies to inspect mapped hardware details, review status information, and copy structured reference data for technical workflows.',
+    tags: ['Hardware Context', 'Reference Data'],
   },
 ]
 
@@ -49,7 +49,8 @@ const doList = [
   'Use date-picker conflict hints to avoid overlap before confirming.',
   'Confirm your selected testwall before finishing the booking flow.',
   'Check Booking History after runs to verify final status.',
-  'Use the command palette in Pseudo Terminal for consistent commands.',
+  'Use Waldies to validate hardware mapping before deeper troubleshooting.',
+  'Coordinate with your team when you need long-running bookings.',
 ]
 
 const avoidList = [
@@ -57,6 +58,7 @@ const avoidList = [
   'Do not ignore booking conflict warnings in the timeframe step.',
   'Do not ignore disabled Booking access; contact an admin instead.',
   'Do not skip history review when debugging failed or interrupted sessions.',
+  'Do not keep idle bookings active once your run is finished.',
 ]
 </script>
 
@@ -71,13 +73,14 @@ const avoidList = [
           <div class="flex flex-wrap items-center gap-2 mb-3">
             <Tag severity="info" value="User Tutorial" />
             <Tag severity="success" value="Booking Workflow" />
-            <Tag severity="warn" value="Terminal Keybind Included" />
+            <Tag severity="warn" value="Waldies Included" />
           </div>
 
           <h1 class="text-3xl font-semibold tracking-tight">How to Book and Use a Testwall</h1>
           <p class="mt-3 text-sm leading-6 opacity-80 max-w-3xl">
-            Follow this guide in order: Overview, Booking, Booking History, then Pseudo Terminal.
-            The sequence prevents conflicts and helps you run commands only when access is active.
+            Follow this guide in order: Overview, Booking, Booking History, then Waldies. This
+            sequence reduces scheduling conflicts and helps you run commands only while access is
+            active.
           </p>
         </div>
       </template>
@@ -152,16 +155,8 @@ const avoidList = [
         <div class="flex flex-wrap gap-2">
           <Button severity="secondary" label="Open Overview" @click="$router.push('/overview')" />
           <Button severity="secondary" label="Open Booking" @click="$router.push('/booking')" />
-          <Button
-            severity="secondary"
-            label="Open Pseudo Terminal"
-            @click="$router.push('/terminal')"
-          />
+          <Button severity="secondary" label="Open Waldies" @click="$router.push('/waldies')" />
         </div>
-        <p class="text-sm leading-6 mt-4 opacity-80">
-          Reminder: In Pseudo Terminal, press <span class="font-semibold">Ctrl/Cmd + L</span> to
-          open the command palette.
-        </p>
       </template>
     </Card>
   </div>

@@ -4,7 +4,6 @@ import Account from '@/pages/Account.vue'
 import Booking from '@/pages/Booking.vue'
 import Overview from '@/pages/Overview.vue'
 import Query from '@/pages/Query.vue'
-import Terminal from '@/pages/Terminal.vue'
 import Tutorial from '@/pages/Tutorial.vue'
 import { createRouter, createWebHistory } from 'vue-router'
 import Waldies from '@/pages/Waldies.vue'
@@ -14,7 +13,6 @@ const router = createRouter({
   routes: [
     { path: '', component: Overview },
     { path: '/overview', component: Overview },
-    { path: '/terminal', component: Terminal },
     { path: '/query', component: Query },
     { path: '/account', component: Account },
     { path: '/booking', component: Booking },

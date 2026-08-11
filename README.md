@@ -102,13 +102,13 @@ CREATE DATABASE IF NOT EXISTS testwallbooker CHARACTER SET utf8mb4 COLLATE utf8m
 
 ### 4) Start backend and frontend
 
-Terminal 1:
+Shell 1:
 
 ```sh
 npm run server
 ```
 
-Terminal 2:
+Shell 2:
 
 ```sh
 npm run dev

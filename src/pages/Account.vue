@@ -421,7 +421,7 @@ function handleLogout() {
                 severity="info"
                 v-tooltip.left="{
                   value:
-                    '<div class=\'font-semibold text-sm\'>Testwall Operator</div><div class=\'opacity-75 text-sm mt-1\'>Can book testwalls, access the pseudo terminal while a booking is active, and run commands against testwall resources.</div>',
+                    '<div class=\'font-semibold text-sm\'>Testwall Operator</div><div class=\'opacity-75 text-sm mt-1\'>Can book testwalls, review availability and occupancy details, and use Waldies for mapped hardware context.</div>',
                   escape: false,
                 }"
                 >Testwall</Tag
@@ -431,7 +431,7 @@ function handleLogout() {
                 severity="success"
                 v-tooltip.left="{
                   value:
-                    '<div class=\'font-semibold text-sm\'>Observer</div><div class=\'opacity-75 text-sm mt-1\'>Read-only access. Can view the Overview and testwall availability, but cannot create bookings or access the terminal. Contact an Admin to request elevated permissions.</div>',
+                    '<div class=\'font-semibold text-sm\'>Observer</div><div class=\'opacity-75 text-sm mt-1\'>Read-only access. Can view Overview and testwall availability, but cannot create bookings. Contact an Admin to request elevated permissions.</div>',
                   escape: false,
                 }"
                 >Observer</Tag

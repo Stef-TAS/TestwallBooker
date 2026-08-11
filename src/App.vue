@@ -63,7 +63,7 @@ const linksMenuOpen = ref(false)
 const quickLinks = [
   { label: 'phpMyAdmin', href: 'http://c-l-twc-001/phpmyadmin/' },
   { label: 'Testwall API Docs', href: 'http://c-l-twc-001/tw_api/html/testwall-docs/index.html' },
-  { label: 'PrimeVue Docs', href: 'https://primevue.org' },
+  { label: 'Validation', href: 'http://c-l-twc-001/test_1/html/intro.html' },
   { label: 'Vite Docs', href: 'https://vite.dev/guide/' },
 ]
 
@@ -71,10 +71,6 @@ function openQuickLink(url: string) {
   window.open(url, '_blank', 'noopener,noreferrer')
   linksMenuOpen.value = false
 }
-
-const canAccessTerminal = ref(true)
-const TerminalToolTip =
-  '<div class="font-semibold text-sm">Missing Access</div><div class="opacity-75 text-sm mt-1">You currently have no active Bookings. Please book a Terminal before accessing the Terminal.</div>'
 
 const NoTestWallAccessToolTip =
   '<div class="font-semibold text-sm">Missing Access</div><div class="opacity-75 text-sm mt-1">You currently have no access to the Testwall, meaning you can only see the Status of the Testwalls. If this is incorrect, contact an Admin or your supervisor.</div>'
@@ -193,18 +189,12 @@ const NoTestWallAccessToolTip =
                       <div class="flex items-center gap-2 w-full">
                         <SidebarMenuButton
                           @click="$router.push('/waldies')"
-                          :disabled="
-                            canAccessTerminal == false || accountStore.account?.canTestwall == false
-                          "
+                          :disabled="accountStore.account?.canTestwall == false"
                           class="flex-1"
                         >
                           <Code />
                           <span>Waldies</span>
                         </SidebarMenuButton>
-                        <Info
-                          v-if="canAccessTerminal == false"
-                          v-tooltip.top="{ value: TerminalToolTip, escape: false }"
-                        />
                         <Info
                           v-if="accountStore.account?.canTestwall == false"
                           v-tooltip.top="{ value: NoTestWallAccessToolTip, escape: false }"
