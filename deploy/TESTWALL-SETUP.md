@@ -24,10 +24,10 @@ Server-side files:
 
 Testwall machine files:
 
-1. [src/python/testwall_heartbeat_service.py](../src/python/testwall_heartbeat_service.py) - Windows service entry point.
+1. [src/python/testwall_client.py](../src/python/testwall_client.py) - unified heartbeat client and Windows service entry point.
 2. [src/python/service.cfg](../src/python/service.cfg) - per-machine configuration.
 3. [src/python/requirements-service.txt](../src/python/requirements-service.txt) - Python packages for the heartbeat service.
-4. [src/python/client.py](../src/python/client.py) - standalone client for testing heartbeat posts.
+4. [src/python/client.py](../src/python/client.py) - compatibility wrapper for older standalone-client usage.
 5. [src/python/server.py](../src/python/server.py) - Python status server used by the Node backend when enabled.
 
 ## Order of setup
@@ -126,49 +126,55 @@ Edit [src/python/service.cfg](../src/python/service.cfg) for that specific machi
 ```ini
 [service]
 name = TTC2700
-server = http://c-l-twc-001/machines/
+server = http://c-l-twc-001:8080
 interval = 5
 ```
 
 Use the values like this:
 
 1. `name` must match the exact testwall name you want shown in the UI.
-2. `server` must point to the live TestwallBooker server.
+2. `server` must point to the machine running [src/python/server.py](../src/python/server.py).
 3. `interval` controls how often the heartbeat is sent.
 
 At this point, the testwall is configured. The service will then:
 
 1. Read `service.cfg` from the same folder.
 2. Collect the machine name, IP address, logged-in users, and testing flag.
-3. Send that state to `server` every `interval` seconds.
+3. Send that state to `server` every `interval` seconds from a background Windows service, without requiring a user to stay logged in.
 
 Install the Windows service from the `src/python` folder:
 
 ```powershell
-python testwall_heartbeat_service.py install
+python testwall_client.py install
 ```
 
 Start the service:
 
 ```powershell
-python testwall_heartbeat_service.py start
+python testwall_client.py start
 ```
 
 To stop it later:
 
 ```powershell
-python testwall_heartbeat_service.py stop
+python testwall_client.py stop
 ```
 
 To remove it completely:
 
 ```powershell
-python testwall_heartbeat_service.py remove
+python testwall_client.py remove
 ```
 
 Verify the testwall is online in the app and that the machine is posting heartbeats.
 
-If you want to test the service without the UI, run the standalone client from the same folder or watch the service log file next to `testwall_heartbeat_service.py`.
+If you want to test the heartbeat sender without installing the service first, run:
+
+```powershell
+python testwall_client.py run --once
+```
+
+Or watch the service log file next to `testwall_client.py`.
 
 If the machine should show a testing state, create this file on that machine:
 
@@ -195,7 +201,7 @@ Execution order in normal operation:
 When you push a new update, follow this order:
 
 1. Pull the latest code on your Windows machine.
-2. Review any changes to [src/python/service.cfg](../src/python/service.cfg), [src/python/testwall_heartbeat_service.py](../src/python/testwall_heartbeat_service.py), and the deployment files under `deploy/`.
+2. Review any changes to [src/python/service.cfg](../src/python/service.cfg), [src/python/testwall_client.py](../src/python/testwall_client.py), and the deployment files under `deploy/`.
 3. Run the deployment script again:
 
 ```bash
