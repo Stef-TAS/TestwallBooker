@@ -178,3 +178,62 @@ body {
 .compact-page .p-stepper .p-stepper-content {
   padding-top: 0.75rem;
 }
+
+/* ─── Hex grid bottom-left drift animation ───────────────────────────────── */
+/* Tile is 90×52 px (flat-top hex, side=30 px). One tile step = (−90, +52). */
+@keyframes hex-drift-bl {
+  from {
+    background-position:
+      0px 0px,
+      center;
+  }
+  to {
+    background-position:
+      -90px 52px,
+      center;
+  }
+}
+
+/* ─── Light theme hex background ────────────────────────────────────────────── */
+html[data-theme='light'] {
+  --p-sidebar-layout-background: transparent !important;
+  --p-sidebar-main-background: transparent !important;
+  --p-sidebar-panel-background: rgba(255, 255, 255, 0.82) !important;
+}
+
+html[data-theme='light'] body {
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='52'%3E%3Cpolygon points='30,0 15,25.98 -15,25.98 -30,0 -15,-25.98 15,-25.98' fill='none' stroke='rgba(99,102,241,0.12)' stroke-width='1'/%3E%3Cpolygon points='120,0 105,25.98 75,25.98 60,0 75,-25.98 105,-25.98' fill='none' stroke='rgba(99,102,241,0.12)' stroke-width='1'/%3E%3Cpolygon points='75,26 60,52 30,52 15,26 30,0 60,0' fill='none' stroke='rgba(99,102,241,0.12)' stroke-width='1'/%3E%3C/svg%3E"),
+    linear-gradient(-45deg, #eff6ff, #faf5ff, #ecfeff);
+  background-size:
+    90px 52px,
+    cover;
+  background-attachment: scroll, fixed;
+  background-repeat: repeat, no-repeat;
+  background-position:
+    0 0,
+    center;
+  animation: hex-drift-bl 22s linear infinite;
+  min-height: 100vh;
+}
+
+html[data-theme='light'] .p-sidebar-panel {
+  backdrop-filter: blur(12px) saturate(160%);
+  -webkit-backdrop-filter: blur(12px) saturate(160%);
+}
+
+html[data-theme='light'] .p-card,
+html[data-theme='light'] .p-fieldset {
+  background: rgba(255, 255, 255, 0.82) !important;
+  backdrop-filter: blur(8px) saturate(140%);
+  -webkit-backdrop-filter: blur(8px) saturate(140%);
+}
+
+/* ─── Reduced motion ────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  html[data-theme='light'] body,
+  html[data-theme='ocean'] body,
+  html[data-theme='crimson'] body {
+    animation: none !important;
+  }
+}

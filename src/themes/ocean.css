@@ -88,8 +88,18 @@ html[data-theme='ocean'] {
 
 /* ─── Deep ocean page background ───────────────────────────────────────── */
 html[data-theme='ocean'] body {
-  background: linear-gradient(160deg, #020f0e 0%, #031e1b 50%, #052e2a 100%) !important;
-  background-attachment: fixed !important;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='52'%3E%3Cpolygon points='30,0 15,25.98 -15,25.98 -30,0 -15,-25.98 15,-25.98' fill='none' stroke='rgba(45,212,191,0.2)' stroke-width='1'/%3E%3Cpolygon points='120,0 105,25.98 75,25.98 60,0 75,-25.98 105,-25.98' fill='none' stroke='rgba(45,212,191,0.2)' stroke-width='1'/%3E%3Cpolygon points='75,26 60,52 30,52 15,26 30,0 60,0' fill='none' stroke='rgba(45,212,191,0.2)' stroke-width='1'/%3E%3C/svg%3E"),
+    linear-gradient(160deg, #020f0e 0%, #031e1b 50%, #052e2a 100%);
+  background-size:
+    90px 52px,
+    cover;
+  background-attachment: scroll, fixed;
+  background-repeat: repeat, no-repeat;
+  background-position:
+    0 0,
+    center;
+  animation: hex-drift-bl 18s linear infinite;
   min-height: 100vh;
 }
 
