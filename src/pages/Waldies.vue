@@ -1,5 +1,15 @@
 <script lang="ts" setup>
-import { Button, Card, Dialog, ProgressSpinner, Select, Tag, Toast } from 'primevue'
+import {
+  Button,
+  Card,
+  DataTable,
+  Column,
+  Dialog,
+  ProgressSpinner,
+  Select,
+  Tag,
+  Toast,
+} from 'primevue'
 import { useToast } from 'primevue/usetoast'
 
 import { computed, onMounted, ref, watch } from 'vue'
@@ -407,25 +417,51 @@ onMounted(() => {
       No waldies found for this testwall.
     </div>
 
-    <div v-else class="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
-      <Card
-        v-for="waldie in waldies"
-        :key="waldie.id"
-        class="transition-transform hover:scale-[1.02] cursor-pointer"
-        v-tooltip.top="'View me!'"
-        @click="openWaldieDetails(waldie.id)"
-      >
-        <template #content>
-          <div class="flex items-start justify-between gap-3">
-            <div>
-              <h3 class="font-semibold">{{ waldie.name }}</h3>
-              <p class="text-sm opacity-80">Serial: {{ waldie.serial_number || '-' }}</p>
+    <template v-else>
+      <div v-if="!settingsStore.compactView" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
+        <Card
+          v-for="waldie in waldies"
+          :key="waldie.id"
+          class="transition-transform hover:scale-[1.02] cursor-pointer"
+          v-tooltip.top="'View me!'"
+          @click="openWaldieDetails(waldie.id)"
+        >
+          <template #content>
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <h3 class="font-semibold">{{ waldie.name }}</h3>
+                <p class="text-sm opacity-80">Serial: {{ waldie.serial_number || '-' }}</p>
+              </div>
+              <Tag :severity="statusSeverity(waldie.status)" :value="waldie.status" />
             </div>
-            <Tag :severity="statusSeverity(waldie.status)" :value="waldie.status" />
-          </div>
-        </template>
-      </Card>
-    </div>
+          </template>
+        </Card>
+      </div>
+
+      <DataTable
+        v-else
+        :value="waldies"
+        size="small"
+        striped-rows
+        row-hover
+        :row-class="() => 'cursor-pointer'"
+        @row-click="(e) => openWaldieDetails(e.data.id)"
+      >
+        <Column field="name" header="Name" sortable />
+        <Column field="ewald_name" header="eWald" sortable />
+        <Column field="testbed_name" header="Testbed" sortable>
+          <template #body="{ data }">{{ data.testbed_name || '-' }}</template>
+        </Column>
+        <Column field="serial_number" header="Serial" sortable>
+          <template #body="{ data }">{{ data.serial_number || '-' }}</template>
+        </Column>
+        <Column field="status" header="Status" sortable>
+          <template #body="{ data }">
+            <Tag :severity="statusSeverity(data.status)" :value="data.status" />
+          </template>
+        </Column>
+      </DataTable>
+    </template>
 
     <Dialog
       v-model:visible="detailsVisible"
