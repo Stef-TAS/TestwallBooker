@@ -319,6 +319,19 @@ async function openWaldieDetails(waldieId: number) {
   }
 }
 
+const waldieCountMap = ref<Record<number, number>>({})
+
+async function loadWaldieCounts() {
+  try {
+    const response = await fetch('/api/testwalls/waldie-counts')
+    if (!response.ok) return
+    const rows = (await response.json()) as Array<{ testwall_id: number; waldie_count: number }>
+    waldieCountMap.value = Object.fromEntries(rows.map((r) => [r.testwall_id, r.waldie_count]))
+  } catch {
+    // non-critical, counts just won't show
+  }
+}
+
 watch(
   () => selectedTestwall.value?.id,
   () => {
@@ -333,6 +346,7 @@ onMounted(() => {
       selectedTestwall.value = firstTestwall
     }
   })
+  void loadWaldieCounts()
 })
 </script>
 <template>
@@ -357,8 +371,7 @@ onMounted(() => {
         </div>
       </template>
     </Card>
-    <div v-if="accountStore.showAdminContent" class="mb-4">
-      <p>Admin Testwall Selector</p>
+    <div class="mb-4">
       <Select
         v-model="selectedTestwall"
         :options="testwallsWithAvailability"
@@ -368,10 +381,13 @@ onMounted(() => {
         filterBy="name"
       >
         <template #option="slotProps">
-          <div class="flex gap-4 justify-between">
-            <span>{{ slotProps.option.name }} </span>
-            <Tag v-if="slotProps.option.isAvailable == true" severity="success">Available</Tag>
-            <Tag v-if="slotProps.option.isAvailable == false" severity="danger">Unavailable</Tag>
+          <div class="flex gap-4 justify-between items-center w-full">
+            <span>{{ slotProps.option.name }}</span>
+            <div class="flex gap-1.5 items-center">
+              <Tag severity="secondary">{{ waldieCountMap[slotProps.option.id] ?? 0 }} waldies</Tag>
+              <Tag v-if="slotProps.option.isAvailable == true" severity="success">Available</Tag>
+              <Tag v-if="slotProps.option.isAvailable == false" severity="danger">Unavailable</Tag>
+            </div>
           </div>
         </template>
       </Select>

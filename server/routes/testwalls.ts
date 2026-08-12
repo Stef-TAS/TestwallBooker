@@ -178,6 +178,17 @@ router.get('/', async (_req: Request, res: Response) => {
   res.json(rows)
 })
 
+// Get waldies count per testwall
+router.get('/waldie-counts', async (_req: Request, res: Response) => {
+  const [rows] = await pool.execute(
+    `SELECT e.l_id AS testwall_id, COUNT(*) AS waldie_count
+     FROM ewald_waldies w
+     INNER JOIN ewalds e ON e.ewld_id = w.ewld_id
+     GROUP BY e.l_id`,
+  )
+  res.json(rows)
+})
+
 // Get all waldies for a specific testwall
 router.get('/:id/waldies', async (req: Request, res: Response) => {
   const { id } = req.params
