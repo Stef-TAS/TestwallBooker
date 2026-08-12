@@ -77,13 +77,16 @@ const NoTestWallAccessToolTip =
 </script>
 
 <template>
-  <div class="quick-links-panel" @mouseleave="linksMenuOpen = false">
+  <div
+    class="fixed left-3 bottom-3 sm:left-4 sm:bottom-4 z-[1200] flex flex-col items-start gap-2"
+    @mouseleave="linksMenuOpen = false"
+  >
     <Transition name="quick-links-menu">
       <div v-if="linksMenuOpen" class="quick-links-dropdown">
         <Button
           v-for="link in quickLinks"
           :key="link.href"
-          class="quick-link-button"
+          class="quick-link-button w-full justify-start"
           severity="secondary"
           outlined
           @click="openQuickLink(link.href)"
@@ -217,12 +220,19 @@ const NoTestWallAccessToolTip =
           </SidebarPanel>
         </SidebarAside>
       </Sidebar>
-      <SidebarMain class="m-4">
-        <RouterView />
+      <SidebarMain class="m-4" style="overflow: hidden">
+        <RouterView v-slot="{ Component }">
+          <Transition name="page-slide" mode="out-in">
+            <component :is="Component" :key="$route.fullPath" />
+          </Transition>
+        </RouterView>
       </SidebarMain>
     </SidebarLayout>
   </div>
-  <div v-else class="login-screen flex items-center justify-center h-screen">
+  <div
+    v-else
+    class="login-screen flex items-center justify-center h-screen bg-cover bg-center bg-no-repeat"
+  >
     <Card class="w-full max-w-sm">
       <template #content>
         <p class="text-4xl text-blue-600 dark:text-sky-400">Wall Test Facility</p>
@@ -267,9 +277,6 @@ const NoTestWallAccessToolTip =
 <style scoped>
 .login-screen {
   background-image: url('./themes/login_background.png');
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
 }
 
 .sidebar-trigger-label {
@@ -292,17 +299,6 @@ const NoTestWallAccessToolTip =
   pointer-events: none;
 }
 
-.quick-links-panel {
-  position: fixed;
-  left: 1rem;
-  bottom: 1rem;
-  z-index: 1200;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.5rem;
-}
-
 .quick-links-dropdown {
   display: flex;
   flex-direction: column;
@@ -321,8 +317,6 @@ const NoTestWallAccessToolTip =
 }
 
 .quick-link-button {
-  width: 100%;
-  justify-content: flex-start;
   transition:
     transform 140ms ease,
     box-shadow 180ms ease,
@@ -453,13 +447,37 @@ const NoTestWallAccessToolTip =
 }
 
 @media (max-width: 640px) {
-  .quick-links-panel {
-    left: 0.75rem;
-    bottom: 0.75rem;
-  }
-
   .quick-links-dropdown {
     min-width: 9.5rem;
+  }
+}
+
+.page-slide-enter-active,
+.page-slide-leave-active {
+  transition:
+    opacity 180ms ease,
+    transform 200ms ease;
+}
+
+.page-slide-enter-from {
+  opacity: 0;
+  transform: translateX(18px);
+}
+
+.page-slide-leave-to {
+  opacity: 0;
+  transform: translateX(-18px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-slide-enter-active,
+  .page-slide-leave-active {
+    transition: opacity 120ms ease;
+  }
+
+  .page-slide-enter-from,
+  .page-slide-leave-to {
+    transform: none;
   }
 }
 </style>
