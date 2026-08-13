@@ -125,6 +125,21 @@ export async function initDb() {
     )
   `)
 
+  await pool.execute(`
+    CREATE TABLE IF NOT EXISTS agent_usage_daily (
+      user_id INT NOT NULL,
+      usage_date DATE NOT NULL,
+      request_count INT NOT NULL DEFAULT 0,
+      prompt_tokens INT NOT NULL DEFAULT 0,
+      completion_tokens INT NOT NULL DEFAULT 0,
+      total_tokens INT NOT NULL DEFAULT 0,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      PRIMARY KEY (user_id, usage_date),
+      FOREIGN KEY (user_id) REFERENCES accounts(id) ON DELETE CASCADE,
+      INDEX idx_usage_date (usage_date)
+    )
+  `)
+
   // Insert default access rights
   await pool.execute(`
     INSERT IGNORE INTO access_rights (role_name, description)

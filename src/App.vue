@@ -204,6 +204,14 @@ const NoTestWallAccessToolTip =
                         />
                       </div>
                     </SidebarMenuItem>
+                    <SidebarMenuItem
+                      v-if="accountStore.account?.isAdmin || accountStore.account?.canTestwall"
+                    >
+                      <SidebarMenuButton @click="$router.push('/agent')">
+                        <Search />
+                        <span>Agent</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
                     <!--
                       <SidebarMenuItem>
                         <SidebarMenuButton @click="$router.push('/query')">

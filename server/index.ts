@@ -13,6 +13,7 @@ import bookingsRouter, { reconcileRecentBookings } from './routes/bookings'
 import accessRightsRouter from './routes/access-rights'
 import authRouter from './routes/auth'
 import systemRouter from './routes/system'
+import agentRouter from './routes/agent'
 
 const app = express()
 const PORT = Number(process.env.SERVER_PORT ?? 3001)
@@ -36,6 +37,7 @@ app.use('/api/testwalls', testwallsRouter)
 app.use('/api/bookings', bookingsRouter)
 app.use('/api/access-rights', accessRightsRouter)
 app.use('/api/system', systemRouter)
+app.use('/api/agent', agentRouter)
 
 if (IS_PRODUCTION) {
   const __dirname = path.dirname(fileURLToPath(import.meta.url))
