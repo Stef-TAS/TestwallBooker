@@ -37,6 +37,13 @@ const adminAccess = [
     severity: 'warn',
     label: 'Real-Time Signal',
   },
+  {
+    title: 'Agent Access and Guardrails',
+    details:
+      'Agent is available to admins and operators only. It is quota-controlled and currently runs a safe temporary fallback mode while final predefined behavior is staged.',
+    severity: 'secondary',
+    label: 'Controlled Assist',
+  },
 ]
 
 const adminCanDo = [
@@ -48,6 +55,7 @@ const adminCanDo = [
   'Review booking status outcomes (active, finished, crashed, forcequit)',
   'Monitor occupancy using current booking owner, live machine users, and avatar context in Overview',
   'Use Waldies to inspect mapped hardware details and copy technical reference data',
+  'Use the Agent page for assisted operations while respecting role gates and quota limits',
 ]
 
 const adminWorkflows = [
@@ -71,12 +79,18 @@ const adminWorkflows = [
     title: 'Intervene and Document',
     body: 'Terminate problematic active bookings when needed and communicate why the intervention happened to keep operations traceable.',
   },
+  {
+    step: '05',
+    title: 'Apply Agent Assistance Carefully',
+    body: 'Use Agent prompts with precise operational context, validate outputs against current booking and wall state, and communicate any action taken from assisted suggestions.',
+  },
 ]
 
 const limitsAndResponsibilities = [
   'Passwords are stored as bcrypt hashes; keep credentials strong and avoid sharing bootstrap admin accounts.',
   'Role-based visibility is implemented in the UI; keep backend authorization checks aligned with those UI constraints.',
   'Use admin privileges carefully: changes to users and scheduling can impact many teams at once.',
+  'Agent usage consumes shared daily budget; avoid unnecessary prompts and keep requests focused.',
   'When a wall appears unavailable, verify booking status, active user, and live machine user context before intervention.',
 ]
 </script>

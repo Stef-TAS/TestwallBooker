@@ -1,8 +1,14 @@
 <script lang="ts" setup>
+import { computed } from 'vue'
+import { useAccountStore } from '@/stores/account'
 import { useSettingsStore } from '@/stores/settings'
 import { Button, Card, Divider, Fieldset, Tag } from 'primevue'
 
 const settingsStore = useSettingsStore()
+const accountStore = useAccountStore()
+const canUseAgent = computed(
+  () => accountStore.account?.isAdmin === true || accountStore.account?.canTestwall === true,
+)
 
 const tutorialSteps = [
   {
@@ -40,6 +46,13 @@ const tutorialSteps = [
       'Open Waldies to inspect mapped hardware details, review status information, and copy structured reference data for technical workflows.',
     tags: ['Hardware Context', 'Reference Data'],
   },
+  {
+    step: '06',
+    title: 'Use Agent for Assisted Operations (Optional)',
+    description:
+      'If you are an admin or operator, use the Agent page for quota-controlled assisted prompts after validating wall status and booking context.',
+    tags: ['Role-Gated', 'Quota-Controlled'],
+  },
 ]
 
 const doList = [
@@ -50,6 +63,7 @@ const doList = [
   'Confirm your selected testwall before finishing the booking flow.',
   'Check Booking History after runs to verify final status.',
   'Use Waldies to validate hardware mapping before deeper troubleshooting.',
+  'Use Agent prompts with clear context and verify outputs before applying them in operations.',
   'Coordinate with your team when you need long-running bookings.',
 ]
 
@@ -58,6 +72,7 @@ const avoidList = [
   'Do not ignore booking conflict warnings in the timeframe step.',
   'Do not ignore disabled Booking access; contact an admin instead.',
   'Do not skip history review when debugging failed or interrupted sessions.',
+  'Do not treat Agent output as authoritative without checking against current booking and wall state.',
   'Do not keep idle bookings active once your run is finished.',
 ]
 </script>
@@ -78,9 +93,9 @@ const avoidList = [
 
           <h1 class="text-3xl font-semibold tracking-tight">How to Book and Use a Testwall</h1>
           <p class="mt-3 text-sm leading-6 opacity-80 max-w-3xl">
-            Follow this guide in order: Overview, Booking, Booking History, then Waldies. This
-            sequence reduces scheduling conflicts and helps you run commands only while access is
-            active.
+            Follow this guide in order: Overview, Booking, Booking History, then Waldies. If your
+            role allows it, use Agent afterward for assisted workflows. This sequence reduces
+            scheduling conflicts and keeps operations aligned with active access.
           </p>
         </div>
       </template>
@@ -156,6 +171,12 @@ const avoidList = [
           <Button severity="secondary" label="Open Overview" @click="$router.push('/overview')" />
           <Button severity="secondary" label="Open Booking" @click="$router.push('/booking')" />
           <Button severity="secondary" label="Open Waldies" @click="$router.push('/waldies')" />
+          <Button
+            v-if="canUseAgent"
+            severity="contrast"
+            label="Open Agent"
+            @click="$router.push('/agent')"
+          />
         </div>
       </template>
     </Card>

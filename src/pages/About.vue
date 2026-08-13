@@ -49,6 +49,12 @@ const userJourney = [
   },
   {
     step: '05',
+    title: 'Agent-Assisted Operations',
+    description:
+      'Admins and operators can use the Agent page for quota-controlled assisted workflows. Requests route through a shared builder account while usage is tracked per user.',
+  },
+  {
+    step: '06',
     title: 'Account and Admin Controls',
     description:
       'Users can update profile pictures and local display preferences, while admins can additionally manage users and permission levels from Account.',
@@ -61,6 +67,7 @@ const apiDomains = [
   'Testwall inventory CRUD operations',
   'Booking CRUD, overlap checks, and active-booking termination',
   'Access-right assignment and role checks',
+  'Agent quota, mode metadata, and request routing endpoints',
   'Operational logs and per-user command history',
   'Overview payload with active owner plus live machine users from Python sidecar',
 ]
@@ -70,6 +77,7 @@ const operationalValue = [
   'Makes occupancy and ownership visible across teams',
   'Lets admins intervene quickly by terminating active bookings',
   'Surfaces structured hardware context through Waldies details',
+  'Adds controlled AI-assist workflows for eligible users via the Agent page',
   'Supports personalization through themes, compact view, and time-format preferences',
   'Improves traceability with logs and command history',
   'Reduces idle time and coordination overhead',
@@ -78,6 +86,7 @@ const operationalValue = [
 const implementationNotes = [
   'Passwords are stored with bcrypt hashing and legacy plaintext records are upgraded on successful login.',
   'Overview availability is derived from active booking windows plus optional live-machine user snapshots from the Python status endpoint.',
+  'The Agent page is role-gated (admin or operator) and currently runs a temporary math-only fallback with daily quota tracking.',
   'The Query page exists as a lightweight placeholder and is currently not surfaced in the main sidebar actions.',
 ]
 </script>
