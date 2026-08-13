@@ -114,13 +114,13 @@ const NoTestWallAccessToolTip =
               <SidebarMenu>
                 <SidebarMenuItem>
                   <SidebarMenuButton @click="$router.push('/overview')">
-                    <Warehouse />
+                    <Warehouse class="sidebar-icon sidebar-icon--brand" />
                     <span class="text-xl"> &nbsp Wall Test Facility</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
                   <SidebarTrigger severity="secondary" target="mainsidebar" :text="true">
-                    <SidebarIcon />
+                    <SidebarIcon class="sidebar-icon sidebar-icon--toggle" />
                     <span class="sidebar-trigger-label">&nbsp Collapse Sidebar</span>
                   </SidebarTrigger>
                 </SidebarMenuItem>
@@ -132,19 +132,19 @@ const NoTestWallAccessToolTip =
                 <SidebarMenu>
                   <SidebarMenuItem>
                     <SidebarMenuButton @click="$router.push('/about')">
-                      <Question />
+                      <Question class="sidebar-icon sidebar-icon--info" />
                       <span>About</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
                     <SidebarMenuButton @click="$router.push('/tutorial')">
-                      <Map />
+                      <Map class="sidebar-icon sidebar-icon--docs" />
                       <span>Tutorial</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem v-if="accountStore.account?.isAdmin">
                     <SidebarMenuButton @click="$router.push('/admin-guide')">
-                      <User />
+                      <User class="sidebar-icon sidebar-icon--admin" />
                       <span>Admin Guide</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -169,7 +169,7 @@ const NoTestWallAccessToolTip =
                   <SidebarMenu>
                     <SidebarMenuItem>
                       <SidebarMenuButton @click="$router.push('/overview')">
-                        <Home />
+                        <Home class="sidebar-icon sidebar-icon--overview" />
                         <span>Overview</span>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -179,11 +179,12 @@ const NoTestWallAccessToolTip =
                           @click="$router.push('/booking')"
                           :disabled="accountStore.account?.canTestwall == false"
                         >
-                          <Bookmark />
+                          <Bookmark class="sidebar-icon sidebar-icon--booking" />
                           <span>Booking</span>
                         </SidebarMenuButton>
                         <Info
                           v-if="accountStore.account?.canTestwall == false"
+                          class="sidebar-icon sidebar-icon--warning"
                           v-tooltip.top="{ value: NoTestWallAccessToolTip, escape: false }"
                         />
                       </div>
@@ -195,11 +196,12 @@ const NoTestWallAccessToolTip =
                           :disabled="accountStore.account?.canTestwall == false"
                           class="flex-1"
                         >
-                          <Code />
+                          <Code class="sidebar-icon sidebar-icon--waldies" />
                           <span>Waldies</span>
                         </SidebarMenuButton>
                         <Info
                           v-if="accountStore.account?.canTestwall == false"
+                          class="sidebar-icon sidebar-icon--warning"
                           v-tooltip.top="{ value: NoTestWallAccessToolTip, escape: false }"
                         />
                       </div>
@@ -208,7 +210,7 @@ const NoTestWallAccessToolTip =
                       v-if="accountStore.account?.isAdmin || accountStore.account?.canTestwall"
                     >
                       <SidebarMenuButton @click="$router.push('/agent')">
-                        <Search />
+                        <Search class="sidebar-icon sidebar-icon--agent" />
                         <span>Agent</span>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -298,6 +300,56 @@ const NoTestWallAccessToolTip =
     max-width 180ms ease,
     opacity 120ms ease,
     margin-left 180ms ease;
+}
+
+.sidebar-icon {
+  color: var(--p-primary-color);
+  transition: color 160ms ease;
+}
+
+.sidebar-icon--brand {
+  color: color-mix(in oklab, var(--p-primary-color) 92%, white);
+}
+
+.sidebar-icon--toggle {
+  color: var(--p-text-muted-color);
+}
+
+.sidebar-icon--overview {
+  color: color-mix(in oklab, var(--p-primary-color) 80%, var(--p-sky-500, #0ea5e9) 20%);
+}
+
+.sidebar-icon--booking {
+  color: color-mix(in oklab, var(--p-primary-color) 70%, var(--p-amber-500, #f59e0b) 30%);
+}
+
+.sidebar-icon--waldies {
+  color: color-mix(in oklab, var(--p-primary-color) 72%, var(--p-emerald-500, #10b981) 28%);
+}
+
+.sidebar-icon--agent {
+  color: color-mix(in oklab, var(--p-primary-color) 68%, var(--p-cyan-500, #06b6d4) 32%);
+}
+
+.sidebar-icon--admin {
+  color: color-mix(in oklab, var(--p-primary-color) 66%, var(--p-rose-500, #f43f5e) 34%);
+}
+
+.sidebar-icon--docs {
+  color: color-mix(in oklab, var(--p-primary-color) 72%, var(--p-violet-500, #8b5cf6) 28%);
+}
+
+.sidebar-icon--info {
+  color: color-mix(in oklab, var(--p-primary-color) 68%, var(--p-blue-500, #3b82f6) 32%);
+}
+
+.sidebar-icon--warning {
+  color: color-mix(in oklab, var(--p-primary-color) 55%, var(--p-orange-500, #f97316) 45%);
+}
+
+#mainsidebar .p-sidebar-menu-button:disabled .sidebar-icon,
+#mainsidebar [aria-disabled='true'] .sidebar-icon {
+  color: color-mix(in oklab, var(--p-text-muted-color) 65%, var(--p-surface-300) 35%);
 }
 
 #mainsidebar[data-state='collapsed'] .sidebar-trigger-label {
