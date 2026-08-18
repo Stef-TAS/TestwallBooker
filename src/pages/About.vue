@@ -198,7 +198,7 @@ const implementationNotes = [
             class="flex gap-4 rounded-xl p-4 transition-transform duration-150 hover:scale-[1.02]"
           >
             <div
-              class="h-9 w-9 shrink-0 rounded-lg bg-cyan-500/20 text-cyan-900 dark:text-cyan-200 font-semibold flex items-center justify-center"
+              class="journey-step-badge h-9 w-9 shrink-0 rounded-lg font-semibold flex items-center justify-center"
             >
               {{ item.step }}
             </div>
@@ -267,6 +267,17 @@ const implementationNotes = [
 :deep(.p-card),
 :deep(.p-fieldset) {
   transition: transform 0.2s ease;
+}
+
+.journey-step-badge {
+  background-color: rgb(6 182 212 / 0.2);
+  border: 1px solid rgb(6 182 212 / 0.45);
+  color: rgb(8 47 73);
+}
+
+:global(html.dark) .journey-step-badge {
+  border-color: rgb(45 212 191 / 0.6);
+  color: rgb(207 250 254);
 }
 
 :deep(.p-card:hover),
