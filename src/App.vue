@@ -245,9 +245,10 @@ const NoTestWallAccessToolTip =
   >
     <Card class="w-full max-w-sm">
       <template #content>
-        <p class="text-4xl text-blue-600 dark:text-sky-400">Wall Test Facility</p>
-        <p class="opacity-50">The internal booking system for all currently available Testwalls</p>
-        <Divider class="mb-8">Login</Divider>
+        <p class="text-4xl text-blue-600 dark:text-sky-400 mb-2">Wall Test Facility</p>
+        <p class="opacity-50 mb-8">
+          The internal booking system for all currently available Testwalls
+        </p>
         <form @submit.prevent="login">
           <FloatLabel class="mb-8">
             <InputText id="account_Email" v-model="AccountEmail" class="w-full" />
