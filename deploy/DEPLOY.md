@@ -33,7 +33,7 @@ This is the main script for real environments and includes:
 2. Backend app:
    - /opt/testwallbooker
 3. Nginx API proxy:
-   - /api/* and /booking/api/* -> http://127.0.0.1:3001/api/*
+   - /api/* -> http://127.0.0.1:3001/api/*
 4. Backend service name:
    - testwallbooker
 
@@ -85,13 +85,13 @@ On the server:
 ```bash
 systemctl status testwallbooker --no-pager -l
 journalctl -u testwallbooker -n 120 --no-pager
-curl -I http://127.0.0.1/booking/
+curl -I http://127.0.0.1/
 curl -I http://127.0.0.1/api/testwalls
 ```
 
 From a browser:
 
-1. http://<host>/booking/
+1. http://<host>/
 2. Login page and API calls should no longer return 502.
 
 ## Known issues and fixes

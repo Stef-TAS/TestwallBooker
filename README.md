@@ -39,7 +39,7 @@ If you are copying this into Confluence, add your internal Git URL in this secti
 2. Backend: Node.js + Express + TypeScript (tsx runtime)
 3. Database: MySQL/MariaDB
 4. Sidecar: Python process started by backend at runtime
-5. Production routing: Nginx serves /booking and proxies /api to backend
+5. Production routing: Nginx serves the SPA at / and proxies /api to backend
 
 ## Main API Areas
 
@@ -116,7 +116,7 @@ npm run dev
 
 ### 5) Open locally
 
-1. Frontend: http://localhost:5173/booking/
+1. Frontend: http://localhost:5173/
 2. Backend health check example: http://localhost:3001/api/testwalls
 
 ## First Account Setup

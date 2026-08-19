@@ -2,7 +2,7 @@
 
 This guide starts from zero and gets you to a working deployment at:
 
-1. http://<host>/booking/
+1. http://<host>/
 2. API reachable at /api/*
 
 It is designed for your current environment:
@@ -131,13 +131,13 @@ On server:
 ```bash
 systemctl status testwallbooker --no-pager -l
 journalctl -u testwallbooker -n 120 --no-pager
-curl -I http://127.0.0.1/booking/
+curl -I http://127.0.0.1/
 curl -I http://127.0.0.1/api/testwalls
 ```
 
 In browser:
 
-1. Open http://<host>/booking/
+1. Open http://<host>/
 2. Try login.
 
 ## 8. Troubleshooting quick fixes
@@ -202,7 +202,7 @@ For every change:
 bash deploy/setup-and-deploy.sh user@host
 ```
 
-3. Verify /booking and login.
+3. Verify / and login.
 
 ## 10. File map
 

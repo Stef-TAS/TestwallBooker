@@ -37,7 +37,7 @@ Do the work in this order so the environment comes up cleanly:
 1. Prepare the Linux server.
 2. Create the database and production `.env` file.
 3. Deploy the web app and API to the server.
-4. Verify the server responds on `/booking` and `/api/*`.
+4. Verify the server responds on `/` and `/api/*`.
 5. Prepare each Windows testwall machine.
 6. Install and configure the heartbeat service on each testwall.
 7. Verify each testwall appears in the app.
@@ -101,7 +101,7 @@ Verify the server after deploy:
 ```bash
 systemctl status testwallbooker --no-pager -l
 journalctl -u testwallbooker -n 120 --no-pager
-curl -I http://127.0.0.1/booking/
+curl -I http://127.0.0.1/
 curl -I http://127.0.0.1/api/testwalls
 ```
 

@@ -61,9 +61,9 @@ const sidebarOpen = ref(true)
 const linksMenuOpen = ref(false)
 
 const quickLinks = [
-  { label: 'phpMyAdmin', href: 'http://c-l-twc-001/phpmyadmin/' },
-  { label: 'Testwall API Docs', href: 'http://c-l-twc-001/tw_api/html/testwall-docs/index.html' },
-  { label: 'Validation', href: 'http://c-l-twc-001/test_1/html/intro.html' },
+  { label: 'phpMyAdmin', href: '/phpmyadmin/' },
+  { label: 'Testwall API Docs', href: '/testwall-docs/' },
+  { label: 'Validation', href: '/test_1/html/intro.html' },
   { label: 'Vite Docs', href: 'https://vite.dev/guide/' },
 ]
 

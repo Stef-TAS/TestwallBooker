@@ -7,7 +7,7 @@ Applies to RHEL, Rocky Linux, AlmaLinux, and CentOS Stream.
 1. Deploy from a Windows laptop (PowerShell + bash).
 2. Target server can be offline from external repos.
 3. App files and Linux node_modules are prepared locally and transferred.
-4. Nginx serves /booking and proxies API to localhost:3001.
+4. Nginx serves the SPA at / and proxies API to localhost:3001.
 
 ## Use this command
 
@@ -121,13 +121,13 @@ sudo systemctl restart testwallbooker
 ## Verification checklist
 
 ```bash
-curl -I http://127.0.0.1/booking/
+curl -I http://127.0.0.1/
 curl -I http://127.0.0.1/api/testwalls
 systemctl is-active testwallbooker
 ```
 
 Expected results:
 
-1. /booking returns 200.
+1. / returns 200.
 2. /api/testwalls returns 200.
 3. testwallbooker service is active.

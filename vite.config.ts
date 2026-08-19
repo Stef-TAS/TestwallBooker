@@ -8,7 +8,7 @@ import tailwindcss from '@tailwindcss/vite'
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: '/booking/',
+  base: '/',
   plugins: [vue(), vueJsx(), tailwindcss(), vueDevTools()],
   resolve: {
     alias: {

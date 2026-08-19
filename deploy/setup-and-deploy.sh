@@ -22,8 +22,9 @@ if [[ -z "$TARGET" ]]; then
 fi
 
 TARGET_LOGIN="${TARGET%@*}"
+TARGET_HOST="${TARGET#*@}"
 REMOTE_APP_DIR="/opt/testwallbooker"
-REMOTE_STATIC_DIR="/usr/share/nginx/html/booking"
+REMOTE_STATIC_DIR="/usr/share/nginx/html"
 REMOTE_OFFLINE_DIR="${REMOTE_APP_DIR}/.offline"
 SERVICE_NAME="testwallbooker"
 SERVICE_USER="testwallbooker"
@@ -500,7 +501,10 @@ sync_static() {
   step "6/10  Syncing frontend files to Nginx static directory..."
 
   ssh_sudo "mkdir -p '${REMOTE_STATIC_DIR}' && chown -R '${TARGET_LOGIN}' '${REMOTE_STATIC_DIR}'"
-  ssh_sudo "find '${REMOTE_STATIC_DIR}' -mindepth 1 -exec rm -rf {} +"
+  # Do not wipe the full web root: other sites/docs (e.g. /tw_api, /phpmyadmin) may coexist.
+  # Replace only files owned by this SPA deployment.
+  ssh_sudo "rm -rf '${REMOTE_STATIC_DIR}/assets'"
+  ssh_sudo "rm -f '${REMOTE_STATIC_DIR}/index.html' '${REMOTE_STATIC_DIR}/favicon.ico'"
   tar -C dist -cf - . | ssh_run "tar -xmf - --no-same-owner --no-same-permissions -C '${REMOTE_STATIC_DIR}'"
 
   ok "Static files synced"
@@ -565,43 +569,82 @@ sync_offline_runtime_dependencies() {
 configure_nginx() {
   step "9/10  Writing Nginx routing config..."
 
-  local default_d_conf="/tmp/testwallbooker-default-d.conf"
+  local remote_short_host
+  local remote_fqdn_host
+  local nginx_server_name
+
+  remote_short_host="$(ssh_run "hostname -s" 2>/dev/null || true)"
+  remote_fqdn_host="$(ssh_run "hostname -f" 2>/dev/null || true)"
+
+  nginx_server_name="${TARGET_HOST} _"
+  if [[ -n "$remote_short_host" && "$remote_short_host" != "$TARGET_HOST" ]]; then
+    nginx_server_name+=" ${remote_short_host}"
+  fi
+  if [[ -n "$remote_fqdn_host" && "$remote_fqdn_host" != "$TARGET_HOST" && "$remote_fqdn_host" != "$remote_short_host" ]]; then
+    nginx_server_name+=" ${remote_fqdn_host}"
+  fi
+
   local vhost_conf="/tmp/testwallbooker-vhost.conf"
 
-  write_remote_file "$default_d_conf" "location /booking/ {
-    alias /usr/share/nginx/html/booking/;
-    try_files \$uri \$uri/ /booking/index.html;
-}
-
-location /api/ {
-    proxy_pass         http://127.0.0.1:3001/api/;
-    proxy_http_version 1.1;
-    proxy_set_header   Upgrade \$http_upgrade;
-    proxy_set_header   Connection 'upgrade';
-    proxy_set_header   Host \$host;
-    proxy_set_header   X-Real-IP \$remote_addr;
-    proxy_set_header   X-Forwarded-For \$proxy_add_x_forwarded_for;
-    proxy_cache_bypass \$http_upgrade;
-}
-
-location /booking/api/ {
-    proxy_pass         http://127.0.0.1:3001/api/;
-    proxy_http_version 1.1;
-    proxy_set_header   Upgrade \$http_upgrade;
-    proxy_set_header   Connection 'upgrade';
-    proxy_set_header   Host \$host;
-    proxy_set_header   X-Real-IP \$remote_addr;
-    proxy_set_header   X-Forwarded-For \$proxy_add_x_forwarded_for;
-    proxy_cache_bypass \$http_upgrade;
-}"
-
   write_remote_file "$vhost_conf" "server {
-    listen 80;
-    server_name _;
+    listen 80 default_server;
+    listen [::]:80 default_server;
+    server_name ${nginx_server_name};
+    root /usr/share/nginx/html;
+    index index.html;
 
-    location /booking/ {
-        alias /usr/share/nginx/html/booking/;
-        try_files \$uri \$uri/ /booking/index.html;
+    # Keep compatibility with existing snippets (phpMyAdmin, etc.).
+    include /etc/nginx/default.d/*.conf;
+
+    # Explicit phpMyAdmin mapping (fallback if default.d/phpmyadmin.conf is absent).
+    location /phpmyadmin/ {
+      alias /usr/share/phpMyAdmin/;
+      index index.php;
+      try_files \$uri \$uri/ /phpmyadmin/index.php?\$query_string;
+    }
+
+    location ~ ^/phpmyadmin/(.+\.php)$ {
+      alias /usr/share/phpMyAdmin/\$1;
+      include fastcgi_params;
+      fastcgi_param SCRIPT_FILENAME /usr/share/phpMyAdmin/\$1;
+      fastcgi_pass unix:/run/php-fpm/www.sock;
+    }
+
+    # Validation docs/static site should remain separate from the SPA.
+    location /test_1/ {
+      alias /var/www/html/test_1/;
+      try_files \$uri \$uri/ =404;
+    }
+
+    location = /overview { try_files /index.html =404; }
+    location = /booking { try_files /index.html =404; }
+    location = /tutorial { try_files /index.html =404; }
+    location = /about { try_files /index.html =404; }
+    location = /account { try_files /index.html =404; }
+    location = /agent { try_files /index.html =404; }
+    location = /waldies { try_files /index.html =404; }
+    location = /admin-guide { try_files /index.html =404; }
+    location = /query { try_files /index.html =404; }
+
+    location = /tw_api/html/testwall-docs {
+      return 301 /testwall-docs/;
+    }
+
+    location = /tw_api/html/testwall-docs/ {
+      return 301 /testwall-docs/;
+    }
+
+    location /testwall-docs/ {
+      alias /var/www/html/testwall-docs/;
+      try_files \$uri \$uri/ =404;
+    }
+
+    location / {
+        try_files \$uri \$uri/ /index.html;
+    }
+
+    location /tw_api/ {
+      try_files \$uri \$uri/ =404;
     }
 
     location /api/ {
@@ -615,20 +658,23 @@ location /booking/api/ {
         proxy_cache_bypass \$http_upgrade;
     }
 
-    location /booking/api/ {
-        proxy_pass         http://127.0.0.1:3001/api/;
+      location /machines/ {
+        proxy_pass         http://127.0.0.1:8080/;
         proxy_http_version 1.1;
-        proxy_set_header   Upgrade \$http_upgrade;
-        proxy_set_header   Connection 'upgrade';
         proxy_set_header   Host \$host;
         proxy_set_header   X-Real-IP \$remote_addr;
         proxy_set_header   X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_cache_bypass \$http_upgrade;
-    }
+      }
+
 }"
 
-  ssh_sudo "if [[ -d /etc/nginx/default.d ]]; then install -m 644 '${default_d_conf}' /etc/nginx/default.d/testwallbooker.conf; rm -f /etc/nginx/conf.d/testwallbooker.conf; else install -m 644 '${vhost_conf}' /etc/nginx/conf.d/testwallbooker.conf; fi"
-  ssh_sudo "rm -f '${default_d_conf}' '${vhost_conf}'"
+  # Install a single authoritative vhost first in conf.d and remove stale variants.
+  ssh_sudo "install -m 644 '${vhost_conf}' /etc/nginx/conf.d/00-testwallbooker.conf"
+  ssh_sudo "rm -f '${vhost_conf}'"
+  ssh_sudo "rm -f /etc/nginx/conf.d/testwallbooker.conf /etc/nginx/default.d/testwallbooker.conf"
+  # Remove legacy/conflicting site configs that hijack host routing.
+  ssh_sudo "rm -f /etc/nginx/conf.d/booking.conf /etc/nginx/conf.d/mysite.conf"
+  ssh_sudo "rm -f /etc/nginx/conf.d/welcome.conf /etc/nginx/default.d/welcome.conf"
 
   ssh_sudo "nginx -t"
   ssh_sudo "systemctl reload nginx"
@@ -732,12 +778,28 @@ verify_health() {
     fatal "Service is not active: ${service_status}"
   fi
 
-  if ! ssh_run "curl -fsS http://127.0.0.1/booking/ >/dev/null"; then
-    warn "Nginx local check for /booking/ failed."
+  if ! ssh_run "curl -fsS http://127.0.0.1/ >/dev/null"; then
+    warn "Nginx local check for / failed."
   fi
 
-  if ! ssh_run "curl -fsS http://127.0.0.1/booking/api/testwalls >/dev/null"; then
+  if ! ssh_run "curl -fsS http://127.0.0.1/ | grep -q 'Wall Test Facility'"; then
+    warn "Root page does not look like TestwallBooker (missing title marker)."
+  fi
+
+  if ssh_run "curl -fsS http://127.0.0.1/ | grep -q 'Red Hat Enterprise Linux Test Page'"; then
+    warn "Root still serves the RHEL test page. Check active nginx server blocks with: nginx -T"
+  fi
+
+  if ! ssh_run "curl -fsS http://127.0.0.1/api/testwalls >/dev/null"; then
     warn "API check failed. Verify database and .env settings."
+  fi
+
+  if ! ssh_run "test -f /var/www/html/testwall-docs/index.html"; then
+    warn "testwall docs are missing at /var/www/html/testwall-docs/index.html"
+  fi
+
+  if ! ssh_run "test -f /var/www/html/test_1/html/intro.html"; then
+    warn "validation content is missing at /var/www/html/test_1/html/intro.html"
   fi
 
   ok "Service is active"
@@ -773,4 +835,4 @@ configure_service_and_deps
 verify_health
 
 echo -e "\n${GREEN}${BOLD}Setup + deploy complete.${RESET}"
-echo -e "${GREEN}Open: http://${TARGET#*@}/booking/${RESET}"
+echo -e "${GREEN}Open: http://${TARGET#*@}/${RESET}"

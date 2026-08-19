@@ -220,5 +220,5 @@ fi
 
 echo -e "\n${GREEN}${BOLD}╔══════════════════════════════════════════════════════╗${RESET}"
 echo -e "${GREEN}${BOLD}║  Deploy complete!                                    ║${RESET}"
-echo -e "${GREEN}${BOLD}║  http://c-l-twc-001/booking/                         ║${RESET}"
+echo -e "${GREEN}${BOLD}║  http://c-l-twc-001/                                 ║${RESET}"
 echo -e "${GREEN}${BOLD}╚══════════════════════════════════════════════════════╝${RESET}"

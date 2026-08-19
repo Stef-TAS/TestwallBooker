@@ -18,7 +18,7 @@ type AccountCookie = {
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
-    { path: '', component: Overview },
+    { path: '/', component: Overview },
     { path: '/overview', component: Overview },
     { path: '/query', component: Query },
     { path: '/account', component: Account },
