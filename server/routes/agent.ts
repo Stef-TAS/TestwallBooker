@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import type { Request, Response } from 'express'
+import type { RowDataPacket } from 'mysql2'
 import { pool } from '../db'
 import {
   runAgentMessage,
@@ -14,6 +15,18 @@ const MAX_HISTORY_ITEMS = 20
 
 type AccountCookie = {
   id: number
+}
+
+type AgentAccessRow = RowDataPacket & {
+  id: number
+  role_name: string
+}
+
+type AgentUsageRow = RowDataPacket & {
+  request_count: number | null
+  prompt_tokens: number | null
+  completion_tokens: number | null
+  total_tokens: number | null
 }
 
 function isAgentChatMessage(value: unknown): value is AgentChatMessage {
@@ -66,17 +79,17 @@ function readAccountFromCookie(req: Request): AccountCookie | null {
 }
 
 async function getAgentAccess(userId: number) {
-  const [rows] = await pool.execute(
+  const [rows] = await pool.execute<AgentAccessRow[]>(
     `SELECT ar.id, ar.role_name FROM access_rights ar
      INNER JOIN user_access_rights uar ON ar.id = uar.access_right_id
      WHERE uar.user_id = ?`,
     [userId],
   )
 
-  const roles = (rows as any[]).map((row) => String(row.role_name).toLowerCase())
-  const roleIds = new Set((rows as any[]).map((row) => Number(row.id)))
+  const roles = rows.map((row) => String(row.role_name).toLowerCase())
+  const roleIds = new Set(rows.map((row) => Number(row.id)))
   const hasOperatorRole = roles.includes('operator')
-  const isUserOnly = (rows as any[]).length === 1 && (roles.includes('user') || roleIds.has(2))
+  const isUserOnly = rows.length === 1 && (roles.includes('user') || roleIds.has(2))
 
   return {
     isAdmin: roles.includes('admin') || roleIds.has(1),
@@ -85,14 +98,14 @@ async function getAgentAccess(userId: number) {
 }
 
 async function getTodaysUsage(userId: number) {
-  const [rows] = await pool.execute(
+  const [rows] = await pool.execute<AgentUsageRow[]>(
     `SELECT request_count, prompt_tokens, completion_tokens, total_tokens
      FROM agent_usage_daily
      WHERE user_id = ? AND usage_date = CURDATE()`,
     [userId],
   )
 
-  const row = (rows as any[])[0]
+  const row = rows[0]
   if (!row) {
     return {
       requestCount: 0,
@@ -217,9 +230,13 @@ router.post('/chat', async (req: Request, res: Response) => {
       requestCount: nextUsage.requestCount,
     },
     agent: {
-      mode: 'math-only',
+      mode: result.mode,
       provider: result.provider,
       builderTunnelReady: result.builderTunnelReady,
+      configuredAgentName: result.configuredAgentName,
+      runtimeSupportsCustomAgent: result.runtimeSupportsCustomAgent,
+      mcpReady: result.mcpReady,
+      mcpTransport: result.mcpTransport,
     },
   })
 })

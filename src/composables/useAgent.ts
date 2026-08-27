@@ -14,9 +14,13 @@ export type AgentQuota = {
 }
 
 export type AgentModeInfo = {
-  mode: 'math-only'
-  provider: 'math-fallback' | 'copilot-sdk-auth-ready'
+  mode: 'math-only' | 'testwall-mcp'
+  provider: 'math-fallback' | 'copilot-sdk-auth-ready' | 'testwall-mcp'
   builderTunnelReady: boolean
+  configuredAgentName: string
+  runtimeSupportsCustomAgent: boolean
+  mcpReady: boolean
+  mcpTransport: 'none' | 'stdio' | 'streamable-http'
 }
 
 export function useAgent() {

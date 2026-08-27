@@ -86,6 +86,13 @@ SMTP_SECURE=false
 SMTP_USER=
 SMTP_PASS=
 EMAIL_FROM=no-reply@testwallbooker.local
+TESTWALL_MCP_TRANSPORT=
+TESTWALL_MCP_COMMAND=
+TESTWALL_MCP_ARGS=[]
+TESTWALL_MCP_CWD=
+TESTWALL_MCP_ENV={}
+TESTWALL_MCP_URL=
+TESTWALL_MCP_HEADERS={}
 ```
 
 Notes:
@@ -93,6 +100,10 @@ Notes:
 1. The backend auto-creates required tables on startup.
 2. The database itself must exist beforehand.
 3. Booking confirmation emails are sent only when SMTP_HOST and EMAIL_FROM are configured.
+4. The Agent page uses the Testwall MCP server when `TESTWALL_MCP_TRANSPORT` is configured.
+5. For a local stdio MCP server, set `TESTWALL_MCP_TRANSPORT=stdio`, `TESTWALL_MCP_COMMAND` to the server executable, and `TESTWALL_MCP_ARGS` to a JSON array of arguments.
+6. For a remote Streamable HTTP MCP server, set `TESTWALL_MCP_TRANSPORT=streamable-http` and `TESTWALL_MCP_URL` to the MCP endpoint.
+7. If production shows `spawn uvx ENOENT`, set an absolute command path in `.env` (for example `TESTWALL_MCP_COMMAND=/usr/local/bin/uvx` or `TESTWALL_MCP_COMMAND=/usr/local/bin/uv` with corresponding args) so systemd does not depend on shell PATH.
 
 ### 3) Create local database
 
@@ -207,6 +218,72 @@ If this works but backend still fails, restart backend and inspect startup logs 
 2. General deployment workflow: deploy/DEPLOY.md
 3. Red Hat specific deployment guide: deploy/DEPLOY-REDHAT.md
 4. Production server from-scratch setup guide: deploy/SETUP-FROM-SCRATCH.md
+
+## Actual Production Setup Flow (Current)
+
+Use `deploy/setup-and-deploy.sh` as the source of truth for real deployments.
+
+Run from repository root on your developer machine:
+
+```bash
+bash deploy/setup-and-deploy.sh user@host
+```
+
+What this script actually does today:
+
+1. Validates SSH and sudo access.
+2. Builds frontend and syncs static files to `/usr/share/nginx/html`.
+3. Syncs backend app into `/opt/testwallbooker`.
+4. Prepares offline Linux Node dependencies locally and copies them to the server.
+5. Prepares Python wheels (offline when possible), creates `/opt/testwallbooker/.venv`, and installs `src/python/requirements.txt`.
+6. Writes Nginx vhost config to `/etc/nginx/conf.d/00-testwallbooker.conf`.
+7. Writes and restarts systemd service `testwallbooker`.
+8. Runs health checks against `/` and `/api/testwalls`.
+
+Important runtime behavior:
+
+1. The Node backend service starts via `npm start` (systemd unit).
+2. On backend startup, `server/index.ts` spawns `src/python/server.py` using `PYTHON_CMD`.
+3. In production deploys, `PYTHON_CMD` is set to `/opt/testwallbooker/.venv/bin/python3` by the deployment script.
+4. The backend reads live machine state from `PYTHON_STATUS_URL` (default `http://127.0.0.1:8080/api/machines`).
+
+## Actual Python Script For Testwall Machines
+
+The script that should run on each Windows testwall machine is:
+
+1. `src/python/testwall_client.py`
+
+This is the unified heartbeat client and Windows service entrypoint. It sends machine state to the Python status server endpoint:
+
+1. `POST <server>/api/heartbeat`
+
+Configuration file on each testwall machine:
+
+1. `src/python/service.cfg`
+
+Required Python packages for each testwall machine:
+
+1. `src/python/requirements-service.txt`
+
+Typical setup on each testwall machine:
+
+```powershell
+pip install -r src/python/requirements-service.txt
+python src/python/testwall_client.py install
+python src/python/testwall_client.py start
+```
+
+Quick one-shot heartbeat test:
+
+```powershell
+python src/python/testwall_client.py run --once
+```
+
+Notes:
+
+1. `src/python/client.py` is only a compatibility wrapper that forwards to `testwall_client.py`.
+2. `src/python/testwall_heartbeat_service.py` is legacy and not the active service entrypoint in the current flow.
+3. A testwall is considered live only when the backend sees fresh machine updates at `PYTHON_STATUS_URL`.
 
 ## Summary For Internal Consumers
 

@@ -11,6 +11,10 @@ import {
   type AgentQuota,
 } from '@/composables/useAgent'
 
+defineOptions({
+  name: 'AgentPage',
+})
+
 const toast = useToast()
 const settingsStore = useSettingsStore()
 const accountStore = useAccountStore()
@@ -21,7 +25,7 @@ const messages = ref<AgentChatMessage[]>([
   {
     role: 'assistant',
     content:
-      'Shared builder-agent workspace is active. The current temporary agent only solves arithmetic while the final predefined agent is being prepared.',
+      'The Testwall MCP Guide profile is configured for this project. When a Testwall MCP server is configured on the backend, this page now calls it directly. If no MCP server is configured, the page falls back to the temporary arithmetic runner.',
   },
 ])
 const quota = ref<AgentQuota | null>(null)
@@ -29,9 +33,17 @@ const agentMode = ref<AgentModeInfo>({
   mode: 'math-only',
   provider: 'math-fallback',
   builderTunnelReady: false,
+  configuredAgentName: 'Testwall MCP Guide',
+  runtimeSupportsCustomAgent: false,
+  mcpReady: false,
+  mcpTransport: 'none',
 })
 
-const examplePrompts = ['calculate (17 + 25) / 6', 'what is 49 * 13?', 'solve 144 / (3 + 9)']
+const examplePrompts = [
+  'list the available testwalls',
+  'show the available DUTs',
+  'how do I set a waldie voltage on TTC2700?',
+]
 
 const canUseAgent = computed(
   () => accountStore.account?.isAdmin === true || accountStore.account?.canTestwall === true,
@@ -124,18 +136,29 @@ onMounted(async () => {
               <div class="flex flex-wrap items-center gap-2 mb-3">
                 <Tag severity="contrast" value="Agent" />
                 <Tag severity="info" value="Shared Builder Account" />
+                <Tag severity="success" :value="agentMode.configuredAgentName" />
                 <Tag
-                  :severity="agentMode.builderTunnelReady ? 'success' : 'warn'"
-                  :value="agentMode.builderTunnelReady ? 'SDK Auth Ready' : 'Math Fallback'"
+                  :severity="agentMode.mcpReady ? 'success' : 'warn'"
+                  :value="
+                    agentMode.runtimeSupportsCustomAgent
+                      ? `MCP ${agentMode.mcpTransport}`
+                      : 'Fallback Runtime'
+                  "
                 />
               </div>
 
               <h1 class="text-3xl font-semibold tracking-tight">Operations Agent</h1>
               <p class="mt-3 text-sm leading-6 opacity-85">
-                All prompts on this page are intended to route through a shared builder account once
-                the final predefined Copilot agent is provided. Until then, the backend is
-                quota-controlled and runs a temporary math-only agent so the tunnel and budgeting
-                flow can be validated safely.
+                This page now prefers a backend Testwall MCP connection when one is configured. The
+                quota-controlled backend still protects the shared account, and the website falls
+                back to the temporary arithmetic runner only when no MCP server is available.
+              </p>
+              <p
+                v-if="agentMode.mode === 'testwall-mcp' && !agentMode.mcpReady"
+                class="mt-2 text-xs leading-5 text-amber-700"
+              >
+                Testwall MCP was selected but did not become ready. Check server logs for Python
+                dependency and database configuration issues.
               </p>
             </div>
 
@@ -179,8 +202,8 @@ onMounted(async () => {
                 <div>
                   <h2 class="text-xl font-semibold">Chat</h2>
                   <p class="text-sm opacity-75 mt-1">
-                    Temporary math-only behavior. The final predefined agent can replace the backend
-                    runner later without changing the page contract.
+                    Ask Testwall API questions here. If the backend is configured with a Testwall
+                    MCP server, requests are routed to that MCP server directly.
                   </p>
                 </div>
                 <Button
@@ -221,7 +244,7 @@ onMounted(async () => {
                   v-model="input"
                   class="agent-input w-full rounded-2xl px-4 py-3 text-sm"
                   rows="5"
-                  placeholder="Ask a math question. Example: calculate (125 + 75) / 4"
+                  placeholder="Ask a Testwall question. Example: how do I configure a waldie voltage on TTC2700?"
                   :disabled="loading || quota?.remainingTokens === 0"
                   @keydown.enter.exact.prevent="submitMessage"
                 />
@@ -268,8 +291,8 @@ onMounted(async () => {
                   </p>
                   <p>
                     The current server route is already separated from the page through a stable
-                    API, so swapping in the final predefined agent is a backend change rather than a
-                    UI rewrite.
+                    API, so the website can switch between the Testwall MCP runtime and the fallback
+                    runner without a UI rewrite.
                   </p>
                 </div>
               </template>
@@ -280,19 +303,25 @@ onMounted(async () => {
                 <h2 class="text-lg font-semibold">Current Mode</h2>
                 <Divider class="my-3" />
                 <div class="flex flex-wrap gap-2 mb-3">
-                  <Tag severity="warn" value="Math Only" />
                   <Tag
-                    :severity="
-                      agentMode.provider === 'copilot-sdk-auth-ready' ? 'info' : 'secondary'
+                    :severity="agentMode.mode === 'testwall-mcp' ? 'success' : 'warn'"
+                    :value="agentMode.mode === 'testwall-mcp' ? 'Testwall MCP' : 'Math Fallback'"
+                  />
+                  <Tag severity="success" :value="agentMode.configuredAgentName" />
+                  <Tag
+                    :severity="agentMode.mcpReady ? 'success' : 'secondary'"
+                    :value="
+                      agentMode.mcpReady
+                        ? `Connected via ${agentMode.mcpTransport}`
+                        : 'No MCP server configured'
                     "
-                    :value="agentMode.provider"
                   />
                 </div>
                 <p class="text-sm leading-6 opacity-85">
-                  The installed Copilot SDK package is currently used as the builder-tunnel
-                  integration anchor, but the package only exposes authentication primitives. Until
-                  the real predefined agent contract is supplied, this page stays on the safe
-                  arithmetic fallback.
+                  The project-level custom agent is still available in VS Code chat, but the website
+                  runtime now prefers a direct Testwall MCP connection. Configure
+                  `TESTWALL_MCP_TRANSPORT` plus either `TESTWALL_MCP_COMMAND` or `TESTWALL_MCP_URL`
+                  on the backend to enable it.
                 </p>
               </template>
             </Card>
