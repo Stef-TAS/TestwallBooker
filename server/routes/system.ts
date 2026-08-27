@@ -4,6 +4,31 @@ import type { Request, Response } from 'express'
 
 const router = Router()
 
+function formatUnknownError(error: unknown): string {
+  if (error instanceof Error) {
+    const details: string[] = [error.message]
+
+    if (error.cause) {
+      if (error.cause instanceof Error) {
+        details.push(`Cause: ${error.cause.message}`)
+        if (error.cause.stack) {
+          details.push(`Cause stack:\n${error.cause.stack}`)
+        }
+      } else {
+        details.push(`Cause: ${String(error.cause)}`)
+      }
+    }
+
+    if (error.stack) {
+      details.push(`Stack:\n${error.stack}`)
+    }
+
+    return details.join('\n\n')
+  }
+
+  return String(error)
+}
+
 async function checkDatabase() {
   try {
     await pool.execute('SELECT 1')
@@ -25,9 +50,16 @@ async function checkPythonServer() {
     })
 
     if (!response.ok) {
+      const bodyText = await response.text()
       return {
         running: false as const,
-        error: `HTTP ${response.status}`,
+        error: [
+          `HTTP ${response.status} ${response.statusText}`,
+          `URL: ${pythonStatusUrl}`,
+          bodyText ? `Response body:\n${bodyText}` : null,
+        ]
+          .filter((line) => line !== null)
+          .join('\n\n'),
       }
     }
 
@@ -35,7 +67,7 @@ async function checkPythonServer() {
   } catch (error) {
     return {
       running: false as const,
-      error: error instanceof Error ? error.message : 'Python status check failed',
+      error: [`URL: ${pythonStatusUrl}`, formatUnknownError(error)].join('\n\n'),
     }
   }
 }

@@ -98,7 +98,15 @@ async function loadSystemStatus() {
   try {
     const res = await fetch('/api/system/status')
     if (!res.ok) {
-      throw new Error(`Status request failed (${res.status})`)
+      const responseText = await res.text()
+      throw new Error(
+        [
+          `Status request failed (${res.status} ${res.statusText})`,
+          responseText ? `Response body:\n${responseText}` : null,
+        ]
+          .filter((line) => line !== null)
+          .join('\n\n'),
+      )
     }
 
     const data = (await res.json()) as {
@@ -510,12 +518,9 @@ function handleLogout() {
                   class="flex flex-col gap-1"
                 >
                   <span class="text-xs text-red-400">Python error:</span>
-                  <InputText
-                    :value="pythonStatus.error"
-                    readonly
-                    class="text-xs font-mono w-full"
-                    :pt="{ root: { class: 'text-red-400! border-red-500/30!' } }"
-                  />
+                  <pre
+                    class="w-full overflow-auto whitespace-pre-wrap wrap-break-word rounded-md border border-red-500/30 bg-red-950/10 p-3 text-xs font-mono text-red-300"
+                  ><code>{{ pythonStatus.error }}</code></pre>
                 </div>
               </div>
 

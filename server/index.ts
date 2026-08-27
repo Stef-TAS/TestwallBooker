@@ -47,14 +47,18 @@ if (IS_PRODUCTION) {
   })
 }
 
-app.use((err: any, _req: express.Request, res: express.Response, next: express.NextFunction) => {
-  if (err?.type === 'entity.too.large') {
-    res.status(413).json({ error: 'Uploaded image is too large. Please choose a smaller file.' })
-    return
-  }
+app.use(
+  (err: unknown, _req: express.Request, res: express.Response, next: express.NextFunction) => {
+    const error = err as { type?: string } | undefined
 
-  next(err)
-})
+    if (error?.type === 'entity.too.large') {
+      res.status(413).json({ error: 'Uploaded image is too large. Please choose a smaller file.' })
+      return
+    }
+
+    next(err)
+  },
+)
 
 initDb()
   .then(async () => {
@@ -69,19 +73,42 @@ initDb()
     const PYTHON_SCRIPT = path.resolve(__dirname, '../src/python/server.py')
     const pythonCmd = process.env.PYTHON_CMD ?? (process.platform === 'win32' ? 'py' : 'python3')
     let pythonProcess: ChildProcess | null = null
+    let shuttingDown = false
 
-    pythonProcess = spawn(pythonCmd, [PYTHON_SCRIPT], { stdio: 'inherit' })
-    console.log(`Python process started: ${pythonCmd} ${PYTHON_SCRIPT} (pid ${pythonProcess.pid})`)
+    const startPythonProcess = () => {
+      pythonProcess = spawn(pythonCmd, [PYTHON_SCRIPT], {
+        stdio: 'inherit',
+        cwd: path.dirname(PYTHON_SCRIPT),
+      })
 
-    pythonProcess.on('error', (err) => {
-      console.error('Failed to start Python process:', err)
-    })
+      console.log(
+        `Python process started: ${pythonCmd} ${PYTHON_SCRIPT} (pid ${pythonProcess.pid})`,
+      )
 
-    pythonProcess.on('exit', (code, signal) => {
-      console.warn(`Python process exited (code=${code}, signal=${signal})`)
-    })
+      pythonProcess.on('error', (err) => {
+        console.error('Failed to start Python process:', err)
+      })
+
+      pythonProcess.on('exit', (code, signal) => {
+        console.warn(`Python process exited (code=${code}, signal=${signal})`)
+
+        if (shuttingDown) {
+          return
+        }
+
+        setTimeout(() => {
+          if (!shuttingDown) {
+            console.warn('Restarting Python process...')
+            startPythonProcess()
+          }
+        }, 5000)
+      })
+    }
+
+    startPythonProcess()
 
     function shutdown() {
+      shuttingDown = true
       if (pythonProcess && !pythonProcess.killed) {
         console.log('Stopping Python process...')
         pythonProcess.kill()
